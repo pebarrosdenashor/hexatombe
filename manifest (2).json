@@ -1,0 +1,16 @@
+{
+  "name": "Hexatombe",
+  "version": "2.4.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Hexatombe",
+    "icon": "https://pebarrosdenashor.github.io/hexatombe/icon.svg",
+    "popover": "https://pebarrosdenashor.github.io/hexatombe/index.html",
+    "height": 760,
+    "width": 460
+  },
+  "background_url": "https://pebarrosdenashor.github.io/hexatombe/background.html",
+  "permissions": [{ "name": "autoplay", "reason": "Tocar o sino da Coroa de Espinhos quando um sacrifício acontece." }],
+  "author": "pebarrosdenashor",
+  "description": "Regras do Hexatombe (Ordem Paranormal): dias, sacrifícios, desertores, intenções, recursos, base e exploração."
+}
