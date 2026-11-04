@@ -122,3 +122,10 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
 
 ## Versão 2.9.1
 - Tokens no quadro aparecem do jeito que estão na sala: só a imagem, sem moldura, fundo, alfinete ou inclinação. O nome aparece ao passar o mouse; a anotação (se houver) fica numa etiqueta pequena embaixo.
+
+## Versão 2.9.2
+- **Tamanho dos itens do quadro:** cada cartão (nota, pista, criatura, pessoa, foto ou token) pode ficar maior ou menor, de 40% até 3×.
+  - Puxe a alça que aparece no canto de baixo, à direita, ao passar o mouse; ou
+  - use os botões − e ＋ no canto de cima; ou
+  - clique no cartão e aperte − ou +.
+- O cartão cresce a partir do alfinete, então os barbantes continuam presos no lugar. O tamanho vale para todos na mesa.

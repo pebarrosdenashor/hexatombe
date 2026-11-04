@@ -1,7 +1,7 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.1";
-import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.1";
-import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.1";
+import * as IMG from "./imagens.js?v=2.9.2";
+import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.2";
+import { TAM_OK, NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.2";
 
 /* =========================================================
    Quadro de investigação do Hexatombe (v2.8)
@@ -103,12 +103,21 @@ function conteudo(c, st) {
 function cardHTML(c, st) {
   const editavel = ["nota", "pessoa", "foto", "token"].includes(c.tipo);
   return `<div class="qc ${c.tipo} ${c.tipo === "nota" ? esc(c.cor || "") : ""} ${ui.sel === c.id ? "sel" : ""} ${ui.novos.has(c.id) ? "novo" : ""}" data-card="${esc(c.id)}" tabindex="0"
-      style="left:${c.x}px;top:${c.y}px;transform:rotate(${c.tipo === "token" ? 0 : c.rot}deg)" aria-label="${esc(c.tipo === "token" ? c.titulo || "Token" : c.tipo)}" ${c.tipo === "token" ? `title="${esc(c.titulo || "Token")}"` : ""}>
+      style="left:${c.x}px;top:${c.y}px;transform:${transformDe(c)}" aria-label="${esc(c.tipo === "token" ? c.titulo || "Token" : c.tipo)}" ${c.tipo === "token" ? `title="${esc(c.titulo || "Token")}"` : ""}>
     ${c.tipo === "token" ? "" : `<span class="pino"></span>`}
-    <span class="ctl">${editavel ? `<button data-q="editar" data-id="${esc(c.id)}" title="Editar">✎</button>` : ""}<button data-q="ligarDe" data-id="${esc(c.id)}" title="Ligar com barbante">🧶</button><button data-q="apagar" data-id="${esc(c.id)}" class="${ui.confirmar === c.id ? "confirm" : ""}" title="${ui.confirmar === c.id ? "Clique de novo para tirar do quadro" : "Tirar do quadro"}">${ui.confirmar === c.id ? "?" : "✕"}</button></span>
+    <span class="ctl">${editavel ? `<button data-q="editar" data-id="${esc(c.id)}" title="Editar">✎</button>` : ""}<button data-q="tamMenos" data-id="${esc(c.id)}" title="Diminuir (tecla −)">−</button><button data-q="tamMais" data-id="${esc(c.id)}" title="Aumentar (tecla +)">＋</button><button data-q="ligarDe" data-id="${esc(c.id)}" title="Ligar com barbante">🧶</button><button data-q="apagar" data-id="${esc(c.id)}" class="${ui.confirmar === c.id ? "confirm" : ""}" title="${ui.confirmar === c.id ? "Clique de novo para tirar do quadro" : "Tirar do quadro"}">${ui.confirmar === c.id ? "?" : "✕"}</button></span>
     ${conteudo(c, st)}
+    <span class="alca" data-alca title="Arraste para aumentar ou diminuir" aria-hidden="true"></span>
     ${c.autor && c.tipo !== "token" ? `<div class="autor">por ${esc(c.autor)}</div>` : ""}
   </div>`;
+}
+// cresce a partir do alfinete (meio do topo), então o barbante continua preso no mesmo lugar
+function transformDe(c) { return `rotate(${c.tipo === "token" ? 0 : num(c.rot)}deg) scale(${TAM_OK(c.tam)})`; }
+function mudarTam(id, fator) {
+  const c = q.cards[id]; if (!c || c.del) return;
+  const novo = { ...c, tam: TAM_OK(TAM_OK(c.tam) * fator) }; if (novo.tam === TAM_OK(c.tam)) return;
+  const el = cartaoEl(id); if (el) el.style.transform = transformDe(novo);
+  salvar({ cards: { [id]: novo }, fios: {} }); desenharFios();
 }
 function pinoDe(id) {
   const c = q.cards[id]; if (!c || c.del) return null;
@@ -253,6 +262,8 @@ document.addEventListener("click", (e) => {
     case "ligar": ui.ligar = !ui.ligar; ui.sel = null; dica(ui.ligar ? "Clique em dois cartões para ligá-los com barbante." : "", ui.ligar); return desenhar();
     case "ligarDe": ui.ligar = true; ui.sel = id; dica("Agora clique no outro cartão.", true); return desenhar();
     case "editar": ui.editando = id; return desenhar();
+    case "tamMais": return mudarTam(id, 1.15);
+    case "tamMenos": return mudarTam(id, 1 / 1.15);
     case "edOk": return terminarEdicao();
     case "cor": { const c = q.cards[ui.editando]; if (c) { gravarEdicao(); c.cor = b.dataset.cor; salvar({ cards: { [c.id]: { ...c } }, fios: {} }); desenhar(); } return; }
     case "apagar": if (ui.confirmar !== id) { ui.confirmar = id; return desenhar(); } ui.confirmar = null; return apagarCard(id);
@@ -298,10 +309,12 @@ $("cartoes").addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse" && e.button !== 0) return;
   if (e.target.closest("button,textarea,input,select,[data-ed]")) return;
   const c = q.cards[el.dataset.card]; if (!c) return;
-  if (ui.editando === c.id) return; // escrevendo neste cartão
-  if (ui.editando) terminarEdicao(); // clicou em outro: termina a edição e já pode arrastar
+  const alca = !!e.target.closest("[data-alca]");
+  if (ui.editando === c.id && !alca) return; // escrevendo neste cartão
+  if (ui.editando && ui.editando !== c.id) terminarEdicao(); // clicou em outro: termina a edição e já pode arrastar
   e.preventDefault(); // sem seleção de texto nem arraste do próprio navegador
-  arraste = { id: c.id, x0: e.clientX, y0: e.clientY, cx: c.x, cy: c.y, mexeu: false, pid: e.pointerId };
+  arraste = { id: c.id, x0: e.clientX, y0: e.clientY, cx: c.x, cy: c.y, mexeu: false, pid: e.pointerId,
+    modo: alca ? "tam" : "mover", t0: TAM_OK(c.tam), w: el.offsetWidth || 170, h: el.offsetHeight || 120 };
   const atual = cartaoEl(c.id); atual?.classList.add("arrasta"); atual?.focus({ preventScroll: true });
   try { atual?.setPointerCapture(e.pointerId); } catch { /* segue sem captura: a página toda escuta */ }
 });
@@ -312,6 +325,13 @@ document.addEventListener("pointermove", (e) => {
   if (!arraste.mexeu && Math.hypot(dx, dy) < 3) return;
   arraste.mexeu = true;
   const c = q.cards[arraste.id]; if (!c || c.del) { arraste = null; return; }
+  if (arraste.modo === "tam") {
+    // o canto de baixo à direita anda w/2 na horizontal e h na vertical para cada +1 de tamanho
+    const tam = TAM_OK(arraste.t0 + (dx / (arraste.w / 2) + dy / arraste.h) / 2);
+    q.cards[arraste.id] = { ...c, tam };
+    const el = cartaoEl(arraste.id); if (el) { el.style.transform = transformDe(q.cards[arraste.id]); el.classList.add("arrasta"); }
+    desenharFios(); salvarDevagar({ ...q.cards[arraste.id] }); return;
+  }
   const x = clamp(arraste.cx + dx, 0, LARG - 60), y = clamp(arraste.cy + dy, 0, ALT - 60);
   q.cards[arraste.id] = { ...c, x, y };
   const el = cartaoEl(arraste.id); // pode ter sido redesenhado no meio do caminho
@@ -330,6 +350,7 @@ window.addEventListener("blur", soltar);
 // setas do teclado movem o cartão selecionado (Shift = passo maior)
 document.addEventListener("keydown", (e) => {
   const el = document.activeElement?.closest?.("[data-card]"); if (!el || ui.editando) return;
+  if (["+", "=", "-", "_"].includes(e.key) && !e.ctrlKey && !e.metaKey) { e.preventDefault(); return mudarTam(el.dataset.card, e.key === "+" || e.key === "=" ? 1.15 : 1 / 1.15); }
   const passo = e.shiftKey ? 40 : 10; const d = { ArrowLeft: [-passo, 0], ArrowRight: [passo, 0], ArrowUp: [0, -passo], ArrowDown: [0, passo] }[e.key];
   if (!d) return; e.preventDefault();
   const c = q.cards[el.dataset.card]; if (!c) return;

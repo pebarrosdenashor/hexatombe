@@ -9,6 +9,8 @@
 export const NS = "io.github.pebarrosdenashor.hexatombe";
 export const QCH = NS + "/quadro";
 export const LARG = 2400, ALT = 1600; // tamanho do quadro
+export const TAM_MIN = 0.4, TAM_MAX = 3; // tamanho de cada cartão (1 = normal)
+export const TAM_OK = (t) => { const n = Number(t); return n > 0 ? Math.round(clamp(n, TAM_MIN, TAM_MAX) * 100) / 100 : 1; };
 export const TIPOS = ["nota", "pista", "criatura", "pessoa", "foto", "token"];
 const num = (v) => Number(v) || 0;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -31,7 +33,7 @@ function limpaCard(c) {
   return {
     id: corta(c.id, 40), tipo: TIPOS.includes(c.tipo) ? c.tipo : "nota", ref: corta(c.ref, 120), titulo: corta(c.titulo, 80), txt: corta(c.txt, 500),
     url: /^https:\/\//i.test(c.url || "") ? corta(c.url, 600) : "", cor: corta(c.cor, 12), x: clamp(num(c.x), 0, LARG - 60), y: clamp(num(c.y), 0, ALT - 60),
-    rot: clamp(num(c.rot), -6, 6), autor: corta(c.autor, 60), at: num(c.at),
+    rot: clamp(num(c.rot), -6, 6), tam: TAM_OK(c.tam), autor: corta(c.autor, 60), at: num(c.at),
   };
 }
 function limpaFio(f) {
