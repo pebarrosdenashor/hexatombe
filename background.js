@@ -38,6 +38,35 @@ function guardarDesejo(d) {
   } catch { /* */ }
 }
 
+/* Pista mostrada pelo mestre: abre na tela de quem pode vê-la */
+async function abrirPista(p) {
+  if (!p) return;
+  try {
+    if (role !== "GM" && Array.isArray(p.para) && p.para.length) {
+      const st = JSON.parse(localStorage.getItem(stateKey()) || "null");
+      const me = await OBR.player.getId();
+      const minhas = (st?.equipes || []).map((t, i) => ((t.membros || []).some((m) => m.ownerId === me) ? i : -1)).filter((i) => i >= 0);
+      if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
+    }
+    localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html", location.href).href, width: 620, height: 760 });
+  } catch { /* */ }
+}
+/* Jogada de circo de um jogador, com a janela do mestre fechada */
+async function guardarCirco(d) {
+  if (await OBR.action.isOpen()) return; // a janela aberta registra sozinha
+  try {
+    const st = JSON.parse(localStorage.getItem(stateKey()) || "null"); if (!st) return;
+    const jogo = d.jogo === "soco" ? "soco" : d.jogo === "dardos" ? "dardos" : null; if (!jogo) return;
+    st.circo ||= {}; st.circo[jogo] ||= []; st.circo.hist ||= [];
+    const nome = String(d.nome || "?").slice(0, 60); const pts = Math.max(0, Number(d.pts) || 0);
+    const meu = st.circo[jogo].find((r) => r.nome === nome);
+    if (!meu) st.circo[jogo].push({ nome, pts }); else if (pts > (Number(meu.pts) || 0)) meu.pts = pts;
+    st.circo.hist.unshift({ jogo, nome, pts, det: String(d.det || "").slice(0, 60), dia: st.dia, at: Date.now() }); st.circo.hist = st.circo.hist.slice(0, 40);
+    st.rev = Date.now(); localStorage.setItem(stateKey(), JSON.stringify(st)); sendChunks({ kind: "state", state: st });
+  } catch { /* */ }
+}
+
 const SYNC = NS + "/state";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
@@ -96,6 +125,8 @@ OBR.onReady(async () => {
   OBR.broadcast.onMessage(CHANNEL, async (ev) => {
     const d = ev.data || {};
     if (d.kind === "desejo") { if (role === "GM" && d.desejo) guardarDesejo(d.desejo); return; }
+    if (d.kind === "handout") { abrirPista(d.pista); return; }
+    if (d.kind === "circo") { if (role === "GM") guardarCirco(d); return; }
     // se a janela do Hexatombe estiver aberta, ela mesma não toca o sino recebido; quem toca é este fundo
     if (d.sino) { bell(); redFlash(); }
   });

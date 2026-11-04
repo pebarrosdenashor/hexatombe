@@ -1,0 +1,20 @@
+import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
+
+const NS = "io.github.pebarrosdenashor.hexatombe";
+const KEY = NS + ":handout";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $doc = document.getElementById("doc");
+
+function mostrar() {
+  let p = null; try { p = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* */ }
+  if (!p) { $doc.innerHTML = `<p class="vazio">Nenhuma pista aberta.</p>`; return; }
+  const img = /^https?:\/\//i.test(p.img || "") ? `<img src="${esc(p.img)}" alt="" title="Clique para ampliar">` : "";
+  $doc.innerHTML = `${p.titulo ? `<h1>${esc(p.titulo)}</h1>` : ""}${img}${p.texto ? `<div class="txt">${esc(p.texto)}</div>` : ""}`;
+  document.title = p.titulo || "Pista";
+  $doc.querySelector("img")?.addEventListener("click", () => $doc.classList.toggle("zoom"));
+}
+mostrar();
+window.addEventListener("storage", (e) => { if (e.key === KEY) mostrar(); });
+document.getElementById("fechar").addEventListener("click", () => {
+  if (OBR.isAvailable) OBR.modal.close(NS + "/handout"); else window.close();
+});

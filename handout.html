@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Special+Elite&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0708; --paper: #e9dfc9; --ink: #2a1f17; --line: #b9a786; --accent: #c8102e; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at top, #241014, var(--bg) 70%); color: #f0e9ea; font: 15px/1.5 Barlow, system-ui, sans-serif; }
+    body { display: flex; flex-direction: column; padding: 16px; }
+    .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .bar span { font-family: Cinzel, serif; letter-spacing: .14em; font-size: 12px; color: #d9a3ab; }
+    button { font: inherit; background: #1f1518; color: #f0e9ea; border: 1px solid #3a2a2e; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    .doc { flex: 1; overflow: auto; background: var(--paper); color: var(--ink); border-radius: 3px; padding: 22px 22px 28px;
+      box-shadow: 0 0 0 1px var(--line), 6px 8px 0 rgba(0,0,0,.55); transform: rotate(-.4deg); }
+    h1 { font-family: "Special Elite", Cinzel, serif; font-size: 22px; margin: 0 0 12px; line-height: 1.2; border-bottom: 1px dashed var(--line); padding-bottom: 8px; }
+    img { display: block; max-width: 100%; margin: 0 auto 14px; border: 6px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,.35); transform: rotate(.8deg); }
+    .txt { font-family: "Special Elite", "Courier New", monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 15px; }
+    .vazio { color: #a8979a; text-align: center; margin-top: 40px; }
+    .zoom img { cursor: zoom-out; transform: none; max-width: none; }
+  </style>
+</head>
+<body>
+  <div class="bar"><span>ARQUIVO · HEXATOMBE</span><button id="fechar">Fechar</button></div>
+  <div class="doc" id="doc"><p class="vazio">Nenhuma pista aberta.</p></div>
+  <script type="module" src="handout.js"></script>
+</body>
+</html>

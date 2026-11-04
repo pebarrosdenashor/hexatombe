@@ -70,3 +70,14 @@ Só o mestre altera o estado; todos veem tudo e podem fazer as rolagens.
 - Equipes NPC agindo sozinhas: na aba Ritual (mestre), "Sortear ações das equipes NPC" sorteia o que cada equipe de NPC fez na fase (coleta em uma área, construção de melhoria, descanso, ataque, caçada a sacrifício, roubo, diplomacia). Os testes já vêm rolados com as perícias dos NPCs. Nada muda até o mestre aprovar; dá para trocar a ação, sortear de novo ou desmarcar.
 - Mortes aprovadas passam pelo "Registrar morte" normal (sino, estigma, desertores). Ações que envolvem a equipe dos jogadores viram apenas um gancho para o mestre narrar.
 - O resultado vai para o diário de cada equipe e para um histórico que só o mestre vê.
+
+
+## Novidades da versão 2.5 — aba Arquivo (todos veem)
+
+- **Pistas e documentos:** o mestre cria cartas, bilhetes e fotos (texto e um link de imagem) e escolhe quem pode ver: todas as equipes ou só algumas. A pista nasce escondida. "Revelar" põe no Arquivo dos jogadores; "Mostrar na tela" revela e abre a pista na tela de quem pode vê-la, como um papel envelhecido.
+- **Bestiário revelado aos poucos:** para cada criatura (do livro ou do mestre), escolha o que o grupo sabe: oculta, avistada (nome, tipo e uma descrição sua), estudada (+ deslocamento, atributos, resistências, vulnerabilidade e presença perturbadora) ou dissecada (+ Defesa, PV, ataques e habilidades). Cada avanço avisa a mesa.
+- **Circo:** placar com medalhas dos dardos e da máquina de soco (vale o melhor resultado de cada um) e as últimas 15 jogadas. Agora os jogadores jogam com o próprio personagem e o resultado vai para o placar, mesmo com a janela do mestre fechada. Recorde batido avisa a mesa.
+
+Arquivos novos: `handout.html` e `handout.js` (a janela da pista). Suba os dois junto com os outros.
+
+As pistas escondidas e o bestiário viajam com o estado do ritual até o navegador dos jogadores. A tela não mostra nada, mas quem souber abrir as ferramentas do navegador conseguiria ler. Não guarde nelas segredos que quebrariam o jogo.

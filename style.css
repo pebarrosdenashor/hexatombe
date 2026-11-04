@@ -335,3 +335,32 @@ body.sino .logo, body.sino .stats b { color: #ff2a48; }
 .npcsim pre { white-space: pre-wrap; margin: 4px 0 0; font-family: inherit; font-size: 12px; color: var(--muted); }
 .npcsim p { margin: 4px 0 0; }
 .npcsim select { max-width: 170px; }
+/* v2.5 — Arquivo: pistas, bestiário revelado, placar do circo */
+.seg.arq { display: flex; gap: 4px; margin-bottom: 10px; }
+.seg.arq button { flex: 1; font-size: 12px; padding: 6px 4px; }
+.seg.arq button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pick { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.row.between { justify-content: space-between; }
+.pform textarea, .bctl input { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: inherit; }
+.pform label { margin-bottom: 6px; }
+.pista .ptop { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+.pista .ptop b { font-family: var(--f-head, Cinzel, serif); font-size: 15px; }
+.pista.escondida { opacity: .72; border-left: 3px dashed var(--muted); }
+.pthumb { display: block; max-width: 100%; max-height: 160px; object-fit: cover; margin: 4px 0 6px; border: 3px solid #e9dfc9; transform: rotate(-1deg); }
+.ptxt { white-space: pre-wrap; font-size: 13px; color: #e6d9c8; }
+.bctl { padding: 8px 0; border-top: 1px solid var(--line); }
+.bctl .row { margin: 4px 0; }
+.revela .bnota { font-style: italic; color: #e6d9c8; margin: 6px 0; }
+.revela .binfo div { font-size: 12px; margin: 2px 0; }
+.revela .binfo span { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: .05em; margin-right: 4px; }
+.revela.n1 summary b::after { content: " ?"; color: var(--muted); }
+.placares { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.placar .ph { font-weight: 600; margin-bottom: 4px; }
+.podio { list-style: none; padding: 0; margin: 0; }
+.podio li { display: flex; gap: 6px; align-items: baseline; padding: 3px 0; border-bottom: 1px dotted var(--line); font-size: 13px; }
+.podio li b { margin-left: auto; }
+.podio li.top:first-child { color: var(--gold); font-weight: 600; }
+.podio .med { width: 22px; text-align: center; }
+.hist { padding-left: 18px; margin: 0; font-size: 13px; }
+.hist li { margin: 3px 0; }
+@media (max-width: 380px) { .placares { grid-template-columns: 1fr; } }
