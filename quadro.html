@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quadro de investigação</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Special+Elite&family=Permanent+Marker&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="quadro.css?v=2.8.0">
+</head>
+<body>
+  <header class="barra">
+    <b class="tit">Quadro de investigação</b>
+    <div class="acoes" id="acoes"></div>
+    <div class="zoom"><button data-q="zoomMenos" title="Afastar" aria-label="Afastar">−</button><span id="zoomTxt">70%</span><button data-q="zoomMais" title="Aproximar" aria-label="Aproximar">＋</button><button data-q="caber" title="Ver o quadro todo">⤢</button></div>
+    <button class="fechar" data-q="fechar" title="Fechar">✕ Fechar</button>
+  </header>
+  <div id="dica" class="dica"></div>
+  <div id="vista"><div id="escala"><div id="quadro"><svg id="fios" xmlns="http://www.w3.org/2000/svg"></svg><div id="cartoes"></div></div></div></div>
+  <div id="camada"></div>
+  <script type="module" src="quadro.js?v=2.8.0"></script>
+</body>
+</html>

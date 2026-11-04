@@ -1,12 +1,16 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.7.1";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.7.1";
+import * as IMG from "./imagens.js?v=2.8.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.8.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.8.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor } from "./quadro-dados.js?v=2.8.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
    - guarda (para o mestre) os desejos enviados pelos jogadores
    - mantém o estado do ritual sincronizado: o mestre responde aos jogadores que chegam,
-     e os jogadores guardam a versão mais nova para abrir a janela já atualizada */
+     e os jogadores guardam a versão mais nova para abrir a janela já atualizada
+   - v2.8: aplica as pesquisas do bestiário com a janela do mestre fechada
+   - v2.8: guarda o quadro de investigação e manda a cópia a quem abrir o quadro */
 
 const NS = "io.github.pebarrosdenashor.hexatombe";
 const CHANNEL = NS + "/roll";
@@ -51,7 +55,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.7.1", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.8.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
@@ -86,7 +90,7 @@ async function onSync(obj) {
     try {
       const st = JSON.parse(localStorage.getItem(stateKey()) || "null");
       for (const id of (obj.ids || []).slice(0, 12)) {
-        if (!(st?.pistas || []).some((p) => p.revelada && p.img === `arq:${id}`)) continue; // só pistas reveladas
+        if (!imgLiberada(st, id)) continue; // só pistas reveladas e criaturas já vistas
         const data = await IMG.pegar(String(id)); if (data) await sendChunks({ kind: "img", id: String(id), data }, 12000);
       }
     } catch { /* */ }
@@ -132,6 +136,37 @@ async function redFlash() {
   } catch { /* */ }
 }
 
+/* Pesquisa de um jogador no bestiário, com a janela do mestre fechada */
+async function guardarPesquisa(d) {
+  if (await OBR.action.isOpen()) return; // a janela aberta registra sozinha
+  try {
+    const st = JSON.parse(localStorage.getItem(stateKey()) || "null"); if (!st) return;
+    const res = aplicarPesquisa(st, d); if (!res) return;
+    st.rev = Date.now(); localStorage.setItem(stateKey(), JSON.stringify(st)); sendChunks({ kind: "state", state: st });
+    OBR.notification.show(res.texto);
+    OBR.broadcast.sendMessage(CHANNEL, { text: res.texto }, { destination: "REMOTE" }).catch(() => {});
+    if (res.ok) OBR.broadcast.sendMessage("io.github.pebarrosdenashor.mestre-hx/msg", { kind: "som", k: "revela" }, { destination: "ALL" }).catch(() => {});
+  } catch { /* */ }
+}
+
+/* ---------- Quadro de investigação ---------- */
+let enviarQ = null, ultimoTudo = 0;
+const recebeQ = receptor((p) => {
+  if ((p.k === "op" || p.k === "tudo") && p.q) {
+    if (p.k === "tudo") ultimoTudo = Date.now();
+    const q = lerQuadro(roomId); if (mesclar(q, p.q)) gravarQuadro(roomId, q);
+  }
+  if (p.k === "pede") {
+    // o mestre responde primeiro; os outros só se ninguém tiver respondido
+    const espera = role === "GM" ? 150 : 700 + Math.random() * 1200; const pedido = Date.now();
+    setTimeout(() => {
+      if (ultimoTudo > pedido) return;
+      const q = lerQuadro(roomId); if (!vivos(q, "cards").length && !vivos(q, "fios").length) return;
+      enviarQ?.({ k: "tudo", q });
+    }, espera);
+  }
+});
+
 /* Equipe gerada no Escudo do Mestre, com a janela do Hexatombe fechada */
 async function receberEquipe() {
   if (role !== "GM") return;
@@ -154,11 +189,14 @@ OBR.onReady(async () => {
   role = await OBR.player.getRole();
   OBR.player.onChange((p) => { role = p.role; });
   OBR.broadcast.onMessage(SYNC, (ev) => onChunk(ev.data));
+  enviarQ = enviador(OBR);
+  OBR.broadcast.onMessage(QCH, (ev) => recebeQ(ev.data));
   OBR.broadcast.onMessage(CHANNEL, async (ev) => {
     const d = ev.data || {};
     if (d.kind === "desejo") { if (role === "GM" && d.desejo) guardarDesejo(d.desejo); return; }
     if (d.kind === "handout") { abrirPista(d.pista); return; }
     if (d.kind === "circo") { if (role === "GM") guardarCirco(d); return; }
+    if (d.kind === "pesquisa") { if (role === "GM") guardarPesquisa(d); return; }
     // se a janela do Hexatombe estiver aberta, ela mesma não toca o sino recebido; quem toca é este fundo
     if (d.sino) { bell(); redFlash(); }
   });

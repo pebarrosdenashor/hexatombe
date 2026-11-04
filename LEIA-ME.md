@@ -91,3 +91,22 @@ As pistas escondidas e o bestiário viajam com o estado do ritual até o navegad
 
 ## Novidades da versão 2.7
 - Recebe as equipes criadas no gerador do Escudo do Mestre: a equipe ganha o nome, os integrantes viram NPCs (com história) e aparece um “Perfil da equipe” na aba Equipes, só para o mestre.
+
+## Novidades da versão 2.8
+Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quadro-dados.js`. Suba todos junto com os outros.
+
+**🧷 Quadro de investigação (Arquivo → Quadro)**
+- Um quadro de cortiça em tela cheia que todos veem e mexem ao mesmo tempo.
+- Prenda 📝 notas (5 cores de papel), 📜 pistas reveladas do Arquivo (com “Ler”), 🐾 criaturas do Bestiário (do jeito que o grupo conhece), 👤 pessoas e 📷 fotos por link.
+- 🧶 Ligar: clique em dois cartões. Clique no barbante para escrever o que liga os dois, trocar para preto (suspeita) ou cortar.
+- Arraste os cartões e o fundo; Ctrl + roda do mouse aproxima. Duas vezes numa nota para editar.
+- Fica guardado no navegador de cada um; quem abre depois recebe a versão de quem estiver na sala. O mestre tem 🗑 Limpar.
+
+**🐾 Bestiário revelado aos poucos (Arquivo → Bestiário)**
+- Nível novo **pressentida**: os jogadores veem só a silhueta (com olhos vermelhos) e o rumor que você escrever, sem o nome.
+- Campos que o grupo ainda não sabe aparecem como ▒▒▒ com 🔒, para eles verem o que falta descobrir.
+- **Revelar só uma parte:** destrave um campo antes do nível (ex.: a vulnerabilidade que um livro contou).
+- **Imagem** por criatura (do computador ou link): preta como silhueta enquanto pressentida, revelada ao ser avistada.
+- **Pesquisa dos jogadores:** marque “Jogadores podem pesquisar” e a DT. Cada jogador rola Ocultismo pela ficha, uma vez por nível; quem passa sobe a criatura um nível (até estudada; dissecar é com você). Funciona com a sua janela fechada.
+- O que muda para o jogador brilha na hora, e a revelação toca um som pela caixa do Escudo do Mestre.
+- Os níveis antigos foram ajustados sozinhos (avistada, estudada e dissecada continuam as mesmas).

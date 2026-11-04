@@ -1,6 +1,7 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.7.1";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.7.1";
+import * as IMG from "./imagens.js?v=2.8.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.8.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.8.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -1310,6 +1311,7 @@ function render() {
     <main>${body}</main>`;
   window.scrollTo(0, y);
   imagensDaTela();
+  if (tab === "arquivo" && ui.arq === "bestiario") { clearTimeout(vistoTimer); vistoTimer = setTimeout(marcarVistos, 2500); }
 }
 function softRender() {
   const a = document.activeElement;
@@ -1653,7 +1655,8 @@ function normalize(s) {
   if (!s || typeof s !== "object") return d;
   const out = { ...d, ...s, circo: { ...d.circo, ...(s.circo || {}) } };
   out.melhorias = Array.isArray(s.melhorias) && s.melhorias.length ? s.melhorias : d.melhorias;
-  out.bestiario = s.bestiario || []; out.revela = s.revela || {}; out.pistas = s.pistas || []; out.conhece = s.conhece || {}; out.mortes = s.mortes || []; out.diarios = s.diarios || {};
+  migrarRevela(s);
+  out.bestiario = s.bestiario || []; out.revela = s.revela || {}; out.revelaV = s.revelaV || 2; out.pistas = s.pistas || []; out.conhece = s.conhece || {}; out.mortes = s.mortes || []; out.diarios = s.diarios || {};
   out.areas = (s.areas || []).map((a) => ({ exp: [], buscas: [], fecha: 0, notas: "", ...a })); out.rel = s.rel || {};
   out.equipes = (s.equipes || d.equipes).map((t, i) => ({ ...d.equipes[i % 6], ...t, membros: t.membros || [], base: t.base || [], jornada: t.jornada || [] }));
   return out;
@@ -1679,13 +1682,9 @@ window.addEventListener("storage", (e) => {
    v2.5 — Arquivo: pistas e documentos, bestiário revelado
    aos poucos e placar do circo (todos veem; o mestre controla)
    ========================================================= */
-const NIVEIS = [
-  ["0", "Oculta"], ["1", "Avistada — nome, tipo e descrição"], ["2", "Estudada — + deslocamento, atributos, resistências"], ["3", "Dissecada — + Defesa, PV, ataques e habilidades"],
-];
-const NIVEL_CURTO = ["oculta", "avistada", "estudada", "dissecada"];
 const MEDALHAS = ["🥇", "🥈", "🥉"];
 function bestEntradas() { return [...BESTIARIO.map((c) => ({ c, k: `l:${c.nome}`, livro: true })), ...state.bestiario.map((c) => ({ c, k: `c:${c.id}`, livro: false }))]; }
-function revelaDe(k) { return state.revela?.[k] || { n: 0, nota: "" }; }
+function revelaDe(k) { return revelaSt(state, k); }
 function pistaVisivel(p) {
   if (isGM()) return true;
   if (!p.revelada) return false;
@@ -1702,7 +1701,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.7.1", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.8.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -1717,7 +1716,7 @@ const enviando = new Map();
 function enviarImagem(id) {
   if (!obrOk || !isGM()) return Promise.resolve(false);
   // só imagens de pistas reveladas saem do navegador do mestre
-  if (!(state.pistas || []).some((p) => p.revelada && p.img === `arq:${id}`)) return Promise.resolve(false);
+  if (!imgLiberada(state, id)) return Promise.resolve(false);
   if (enviando.has(id)) return enviando.get(id);
   const pr = (async () => { const data = await IMG.pegar(id); return data ? sendChunks({ kind: "img", id, data }, 12000) : false; })()
     .finally(() => setTimeout(() => enviando.delete(id), 4000));
@@ -1779,32 +1778,114 @@ function pistaCard(p) {
   </article>`;
 }
 
-/* ---------- Bestiário revelado ---------- */
-function bestRevelado(e, n) {
+/* ---------- Bestiário revelado (v2.8) ---------- */
+const VISTO = () => NS + ":visto:" + roomId; // o que esta pessoa já viu, para animar o que é novo
+function vistos() { try { return JSON.parse(lsGet(VISTO()) || "{}"); } catch { return {}; } }
+function silhueta(r, c) {
+  const tipo = String(c.tipo || "").toLowerCase();
+  if (r.img) return IMG.ehArq(r.img) ? `<img class="bimg" data-arq="${esc(IMG.arqId(r.img))}" alt="">` : `<img class="bimg" src="${esc(r.img)}" alt="" loading="lazy">`;
+  // sem imagem: um vulto genérico, com olhos
+  const forma = /animal|arara|jaguatirica|cachorro|tigre|cavalo|macaco|corvo/.test(tipo)
+    ? `<path d="M18 70c4-18 20-30 38-30 10 0 16-8 26-8 8 0 12 6 12 12 0 8-6 10-6 18 0 10 8 12 8 22H72c0-6-4-10-10-10s-8 4-8 10H30c0-8-8-8-12-14Z"/>`
+    : `<path d="M50 14c-12 0-20 10-20 22 0 8 4 14 8 18-12 4-20 14-22 30h68c-2-16-10-26-22-30 4-4 8-10 8-18 0-12-8-22-20-22Z"/>`;
+  return `<svg class="bimg vulto" viewBox="0 0 100 100" aria-hidden="true"><g fill="#050304">${forma}</g><circle cx="44" cy="33" r="2.6" fill="#ff2a48"/><circle cx="57" cy="33" r="2.6" fill="#ff2a48"/></svg>`;
+}
+function valorCampo(c, k) {
+  if (k === "atq") return (c.atq || []).length ? `<ul class="plain small">${c.atq.map((a) => `<li><b>${esc(a[0])}</b> ${esc(a[1])} · ${esc(a[2])} ${esc(a[3] || "")}</li>`).join("")}</ul>` : "";
+  if (k === "hab") return (c.hab || []).length ? `<ul class="plain small">${c.hab.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : "";
+  return c[k] !== undefined && c[k] !== "" ? esc(c[k]) : "";
+}
+function bestRevelado(e, n, novo = false) {
   const c = e.c; const r = revelaDe(e.k);
-  const linhas = [];
-  if (n >= 2) {
-    if (c.desl) linhas.push(`<div><span>Deslocamento</span> ${esc(c.desl)}</div>`);
-    if (c.attrs) linhas.push(`<div><span>Atributos</span> ${esc(c.attrs)}</div>`);
-    if (c.rd) linhas.push(`<div><span>Resistências</span> ${esc(c.rd)}</div>`);
-    if (c.vuln) linhas.push(`<div><span>Vulnerável a</span> ${esc(c.vuln)}</div>`);
-    if (c.pp) linhas.push(`<div><span>Presença perturbadora</span> ${esc(c.pp)}</div>`);
+  const visto = num(vistos()[e.k]);
+  const anima = novo || n > visto;
+  if (n === 1) {
+    return `<article class="card beast revela n1 ${anima ? "novo" : ""}" data-bk="${esc(e.k)}">
+      <div class="bfoto silh">${silhueta(r, c)}</div>
+      <div class="bcab"><b class="bnome">???</b><span class="tag muted">pressentida</span></div>
+      ${r.rumor ? `<p class="bnota">“${esc(r.rumor)}”</p>` : `<p class="muted">Algo está lá fora. Ninguém sabe o quê.</p>`}
+      ${pesqHTML(e, r)}</article>`;
   }
-  return `<details class="card beast revela n${n}"><summary><b>${esc(c.nome)}</b> <span class="muted">${esc(c.tipo || "")} · ${NIVEL_CURTO[n]}</span></summary>
+  const campos = CAMPOS.filter(([k]) => valorCampo(c, k) || !sabe(r, k));
+  const linhas = campos.map(([k, rot, nv]) => sabe(r, k)
+    ? `<div class="bc ${k === "atq" || k === "hab" ? "largo" : ""}"><span>${rot}</span>${valorCampo(c, k) || "—"}</div>`
+    : `<div class="bc tranca ${k === "atq" || k === "hab" ? "largo" : ""}" title="Descubra ${nv === 3 ? "estudando" : "dissecando"} a criatura"><span>${rot}</span><i aria-label="desconhecido">▒▒▒▒▒</i></div>`).join("");
+  return `<details class="card beast revela n${n} ${anima ? "novo" : ""}" data-bk="${esc(e.k)}" ${ui.bAberta === e.k || anima ? "open" : ""}><summary><b>${esc(c.nome)}</b> <span class="muted">${esc(c.tipo || "")} · ${NIVEL_CURTO[n]}</span></summary>
+    <div class="bfoto">${silhueta(r, c)}</div>
     ${r.nota ? `<p class="bnota">${esc(r.nota)}</p>` : ""}
-    ${n >= 3 ? `<div class="bstats"><div><span>Defesa</span><b>${esc(c.def)}</b></div><div><span>PV</span><b>${esc(c.pv)}</b></div><div><span>VD</span><b>${esc(c.vd || "?")}</b></div></div>` : ""}
-    ${linhas.length ? `<div class="binfo">${linhas.join("")}</div>` : ""}
-    ${n >= 3 && (c.atq || []).length ? `<div class="muted small">Ataques</div><ul class="plain small">${c.atq.map((a) => `<li><b>${esc(a[0])}</b> ${esc(a[1])} · ${esc(a[2])} ${esc(a[3] || "")}</li>`).join("")}</ul>` : ""}
-    ${n >= 3 && (c.hab || []).length ? `<div class="muted small">Habilidades</div><ul class="plain small">${c.hab.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
-    ${n < 3 ? `<p class="muted small">${n === 1 ? "Ainda não sabem como enfrentá-la." : "Os números exatos ainda são um mistério."}</p>` : ""}
+    <div class="bcampos">${linhas}</div>
+    ${n < 4 ? `<p class="muted small">${n === 2 ? "Ainda não sabem como enfrentá-la." : "Os números exatos ainda são um mistério."}</p>` : ""}
+    ${pesqHTML(e, r)}
   </details>`;
 }
-function bestControle(e) {
-  const r = revelaDe(e.k);
-  return `<div class="bctl"><div class="row between"><b>${esc(e.c.nome)}</b><span class="muted small">${e.livro ? "livro" : "do mestre"}</span></div>
-    <div class="row"><select data-revela="${esc(e.k)}">${NIVEIS.map(([v, l]) => `<option value="${v}" ${String(r.n) === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-    <input data-rnota="${esc(e.k)}" value="${esc(r.nota)}" placeholder="Descrição para os jogadores (o que viram, rumores…)"></div>`;
+function pesqHTML(e, r) {
+  if (!r.pesq || r.n < 1 || r.n >= PESQ_MAX) return "";
+  if (isGM()) return `<p class="muted small">🔍 Pesquisa aberta: Ocultismo DT ${r.dt}.</p>`;
+  const meus = myMemberIds(); if (!meus.length) return "";
+  const tentou = r.tent[`${me.id}:${r.n}`] !== undefined;
+  return `<div class="row bpesq">${tentou ? `<span class="muted small">Você já pesquisou esta criatura neste nível (${num(r.tent[`${me.id}:${r.n}`])}).</span>`
+    : `<button data-ax="bPesq" data-k="${esc(e.k)}" title="Rola Ocultismo pela sua ficha">🔍 Pesquisar (Ocultismo DT ${r.dt})</button>`}</div>`;
 }
+function bestControle(e) {
+  const r = revelaDe(e.k); const c = e.c; const k = esc(e.k);
+  const tent = Object.entries(r.tent);
+  return `<div class="bctl" data-bk="${k}"><div class="row between"><b>${esc(c.nome)}</b><span class="muted small">${e.livro ? "livro" : "do mestre"} · ${NIVEL_CURTO[r.n]}</span></div>
+    <div class="row"><select data-revela="${k}">${NIVEIS.map(([v, l]) => `<option value="${v}" ${String(r.n) === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+    <input data-rrumor="${k}" value="${esc(r.rumor)}" placeholder="Rumor (o que aparece na silhueta: “algo arrasta correntes perto do lago”)">
+    <input data-rnota="${k}" value="${esc(r.nota)}" placeholder="Descrição quando avistada (o que viram)">
+    <div class="row bimgctl">${r.img ? `<span class="mini">${silhueta(r, c)}</span><button class="ghost small" data-ax="bImgTirar" data-k="${k}">✕ Tirar imagem</button>`
+      : `<label class="btn small">🖼 Imagem do computador<input type="file" data-bimgarq="${k}" accept="image/*" hidden></label><input data-bimgurl="${k}" placeholder="ou link https://… .png" style="flex:1">`}</div>
+    <details class="small" data-keep="bx_${k}" ${ui["bx_" + e.k] ? "open" : ""}><summary>Revelar só uma parte</summary><div class="bextra">${CAMPOS.filter(([f]) => valorCampo(c, f)).map(([f, rot, nv]) => `<label class="check"><input type="checkbox" data-bextra="${k}" data-f="${f}" ${r.extra.includes(f) ? "checked" : ""} ${r.n >= nv ? "disabled" : ""}> ${rot}${r.n >= nv ? " (já revelado)" : ""}</label>`).join("") || `<span class="muted">Sem dados para revelar.</span>`}</div></details>
+    <div class="row"><label class="check"><input type="checkbox" data-bpesq="${k}" ${r.pesq ? "checked" : ""}> Jogadores podem pesquisar</label>
+      <label class="inline small">DT <input type="number" data-bdt="${k}" value="${r.dt}" min="5" max="40" style="width:60px"></label></div>
+    ${tent.length ? `<div class="muted small">Tentativas: ${tent.map(([q, v]) => `${esc(nomeJogador(q.split(":")[0]))} (${NIVEL_CURTO[num(q.split(":")[1])]}) ${num(v)}`).join(" · ")} <button class="ghost small" data-ax="bTentZerar" data-k="${k}">zerar</button></div>` : ""}
+  </div>`;
+}
+function nomeJogador(pid) { const x = allMembers().find((y) => y.m.ownerId === pid); return x ? mName(x.m) : "jogador"; }
+function marcarVistos() {
+  const v = vistos(); let mudou = false;
+  for (const e of bestEntradas()) { const n = revelaDe(e.k).n; if (num(v[e.k]) !== n) { v[e.k] = n; mudou = true; } }
+  if (mudou) lsSet(VISTO(), JSON.stringify(v));
+}
+function pesquisar(k) {
+  const mid = myMemberIds().find((id) => { const x = findM(id); return x?.m.vivo !== false && x?.m.sheetId && getSheet(x.m.sheetId); }) || myMemberIds()[0];
+  const x = mid && findM(mid); if (!x) return toast("Você precisa estar numa equipe com a sua ficha para pesquisar.");
+  const r = revelaDe(k); if (!r.pesq) return toast("O mestre fechou a pesquisa desta criatura.");
+  const t = memberTest(mid, "Ocultismo"); if (!t) return;
+  const nome = mName(x.m);
+  if (obrOk) OBR.broadcast.sendMessage(CHANNEL, { kind: "pesquisa", k, pid: me.id, nome, total: t.total, txt: t.txt }).catch(() => {});
+  toast(`🔍 Ocultismo: ${t.txt}. O mestre recebe o resultado.`);
+  // marca a tentativa aqui também, para o botão sumir na hora
+  ((state.revela[k] ||= { n: r.n }).tent ||= {})[`${me.id}:${r.n}`] = t.total; softRender();
+}
+function receberPesquisa(d) {
+  if (!isGM()) return;
+  beginAction("Pesquisa no bestiário");
+  const res = aplicarPesquisa(state, d);
+  if (!res) { endAction(); return; }
+  save(true); endAction(); softRender();
+  announce(res.texto);
+  if (res.ok) somRevela();
+}
+/* ---------- Quadro de investigação (janela própria: quadro.html) ---------- */
+function quadroResumo() {
+  try { const q = JSON.parse(lsGet(`${NS}:quadro:${roomId}`) || "null"); return q ? [Object.values(q.cards || {}).filter((c) => !c.del).length, Object.values(q.fios || {}).filter((f) => !f.del).length] : [0, 0]; } catch { return [0, 0]; }
+}
+function quadroAba() {
+  const [nc, nf] = quadroResumo();
+  return `<section class="card quadro-chamada"><h3>🧷 Quadro de investigação</h3>
+    <p>Um quadro de cortiça que a mesa toda vê e mexe ao mesmo tempo: prendam pistas do Arquivo, criaturas do Bestiário, suspeitos e anotações, e liguem tudo com barbante.</p>
+    <p class="muted">${nc ? `${nc} cartão(ões) e ${nf} barbante(s) no quadro.` : "O quadro ainda está vazio."}</p>
+    <div class="row"><button class="primary" data-ax="qAbrir">🧷 Abrir o quadro</button></div>
+    <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
+}
+function abrirQuadro() {
+  const url = new URL("quadro.html?v=2.8.0", location.href).href;
+  if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
+  else window.open(url + (isGM() ? "&gm" : ""), "_blank");
+}
+let vistoTimer;
+function somRevela() { if (obrOk) OBR.broadcast.sendMessage("io.github.pebarrosdenashor.mestre-hx/msg", { kind: "som", k: "revela" }, { destination: "ALL" }).catch(() => {}); }
 
 /* ---------- Placar do circo ---------- */
 const JOGOS = { dardos: ["🎯", "Acerte os dardos", " pts"], soco: ["👊", "Máquina de soco", ""] };
@@ -1834,9 +1915,9 @@ function circoJogar() {
 function tabArquivo() {
   const gm = isGM(); ui.arq ||= "pistas";
   const pistas = (state.pistas || []).filter(pistaVisivel);
-  const ent = bestEntradas(); const vistas = ent.filter((e) => num(revelaDe(e.k).n) > 0);
+  const ent = bestEntradas(); const vistas = ent.filter((e) => revelaDe(e.k).n > 0).sort((x, y) => revelaDe(y.k).n - revelaDe(x.k).n || x.c.nome.localeCompare(y.c.nome));
   const hist = state.circo.hist || [];
-  const sub = [["pistas", `📜 Pistas${pistas.length ? ` (${pistas.length})` : ""}`], ["bestiario", `🐾 Bestiário${vistas.length ? ` (${vistas.length})` : ""}`], ["circo", "🎪 Circo"]];
+  const sub = [["pistas", `📜 Pistas${pistas.length ? ` (${pistas.length})` : ""}`], ["quadro", "🧷 Quadro"], ["bestiario", `🐾 Bestiário${vistas.length ? ` (${vistas.length})` : ""}`], ["circo", "🎪 Circo"]];
   let body = "";
   if (ui.arq === "pistas") {
     body = `${gm ? `<details class="card" data-keep="pNova" ${ui.pEdit || ui.pNova ? "open" : ""}><summary><b>${ui.pEdit ? "Editando pista" : "＋ Nova pista ou documento"}</b></summary>${pistaForm(ui.pEdit ? state.pistas.find((p) => p.id === ui.pEdit) : null)}</details>
@@ -1845,9 +1926,12 @@ function tabArquivo() {
       ${pistas.length ? pistas.map(pistaCard).join("") : `<section class="card"><p class="muted">${gm ? "Nenhuma pista criada." : "Nenhuma pista encontrada ainda."}</p></section>`}`;
   } else if (ui.arq === "bestiario") {
     body = `${gm ? `<details class="card" data-keep="bctlOpen" ${ui.bctlOpen ? "open" : ""}><summary><b>O que os jogadores sabem</b> <span class="muted">${vistas.length}/${ent.length}</span></summary>
-        <p class="muted small">Avance o nível conforme o grupo descobre. Cada mudança avisa a mesa.</p>${ent.map(bestControle).join("")}</details>
-      <div class="section-title">Como os jogadores veem</div>` : ""}
-      ${vistas.length ? vistas.map((e) => bestRevelado(e, num(revelaDe(e.k).n))).join("") : `<section class="card"><p class="muted">Nenhuma criatura registrada ainda.</p></section>`}`;
+        <p class="muted small">Avance o nível conforme o grupo descobre: pressentida mostra só a silhueta e o rumor; cada nível destrava mais campos. Dá para revelar uma parte antes (ex.: a fraqueza que um livro contou) e deixar os jogadores pesquisarem com Ocultismo (sobe até “estudada”; dissecar é com você).</p>
+        <input id="bBusca" placeholder="🔍 Buscar criatura…" value="${esc(ui.bBusca || "")}">${ent.filter((e) => !ui.bBusca || e.c.nome.toLowerCase().includes(ui.bBusca.toLowerCase())).map(bestControle).join("")}</details>
+      <div class="section-title">Como os jogadores veem</div>` : `<p class="muted">O que o grupo sabe sobre as ameaças do Hexatombe. Campos com ▒▒▒ ainda são um mistério.</p>`}
+      ${vistas.length ? vistas.map((e) => bestRevelado(e, revelaDe(e.k).n)).join("") : `<section class="card"><p class="muted">Nenhuma criatura registrada ainda.</p></section>`}`;
+  } else if (ui.arq === "quadro") {
+    body = quadroAba();
   } else {
     body = `<section class="card"><h3>Placar</h3><div class="placares">${placar("dardos")}${placar("soco")}</div>
         ${gm ? `<div class="row"><button class="ghost" data-ax="cxZerar">Zerar placar</button></div>` : ""}</section>
@@ -1902,6 +1986,8 @@ function onArquivoClick(e) {
     case "pAbrir": if (p) abrirPista(p); return;
     case "cxDardos": return jogarCirco("dardos");
     case "cxSoco": return jogarCirco("soco");
+    case "bPesq": return pesquisar(b.dataset.k);
+    case "qAbrir": return abrirQuadro();
   }
   if (!isGM()) return;
   switch (a) {
@@ -1931,6 +2017,8 @@ function onArquivoClick(e) {
       if (!p.revelada) { p.revelada = true; save(); }
       mostrarPistaParaTodos(p); toast("Pista aberta na tela dos jogadores."); return;
     }
+    case "bImgTirar": { const k = b.dataset.k; const r = state.revela[k]; if (r) { if (IMG.ehArq(r.img) && !(state.pistas || []).some((p) => p.img === r.img)) IMG.apagar(IMG.arqId(r.img)); r.img = ""; save(); } return; }
+    case "bTentZerar": { const r = state.revela[b.dataset.k]; if (r) { r.tent = {}; save(); } return; }
     case "cxZerar": {
       if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Confirmar: zerar?"; return; }
       state.circo.dardos = []; state.circo.soco = []; state.circo.hist = []; save(); return;
@@ -1966,19 +2054,53 @@ async function onArquivoChange(e) {
     }
     save(); toast(`${ok} pista(s) criada(s), escondidas${falhas.length ? `. Não deu para ler: ${falhas.slice(0, 3).join(", ")}` : ""}.`); return;
   }
+  const R = (k) => ((state.revela ||= {})[k] ||= { n: 0 });
   if (el.dataset.revela) {
-    const k = el.dataset.revela; const n = num(el.value); const r = { ...revelaDe(k), n };
-    const antes = num(revelaDe(k).n);
-    (state.revela ||= {})[k] = r; save(true);
+    const k = el.dataset.revela; const n = num(el.value);
+    const antes = revelaDe(k).n;
+    R(k).n = n; save(true);
     const e2 = bestEntradas().find((x) => x.k === k);
-    if (n > antes && e2) announce(`🐾 Bestiário: ${e2.c.nome} — ${NIVEL_CURTO[n]}`);
+    if (n > antes && e2) { announce(n === 1 ? `🐾 Bestiário: algo foi pressentido${revelaDe(k).rumor ? ` — “${revelaDe(k).rumor}”` : ""}` : `🐾 Bestiário: ${e2.c.nome} — ${NIVEL_CURTO[n]}`); somRevela(); }
+    if (n >= 1 && IMG.ehArq(revelaDe(k).img)) enviarImagem(IMG.arqId(revelaDe(k).img));
     softRender(); return;
   }
-  if (el.dataset.rnota) { const k = el.dataset.rnota; (state.revela ||= {})[k] = { ...revelaDe(k), nota: el.value.slice(0, 600) }; save(true); return; }
+  if (el.dataset.rnota) { R(el.dataset.rnota).nota = el.value.slice(0, 600); save(true); return; }
+  if (el.dataset.rrumor) { R(el.dataset.rrumor).rumor = el.value.slice(0, 300); save(true); return; }
+  if (el.dataset.bpesq) { R(el.dataset.bpesq).pesq = el.checked; save(true); if (el.checked && revelaDe(el.dataset.bpesq).n >= 1) announce("🔍 Uma criatura do Bestiário pode ser pesquisada (aba Arquivo)."); softRender(); return; }
+  if (el.dataset.bdt) { R(el.dataset.bdt).dt = Math.max(5, Math.min(40, num(el.value) || 20)); save(true); return; }
+  if (el.dataset.bextra) {
+    const r = R(el.dataset.bextra); const f = el.dataset.f; const set = new Set(r.extra || []);
+    if (el.checked) set.add(f); else set.delete(f);
+    r.extra = [...set]; save(true);
+    const e2 = bestEntradas().find((x) => x.k === el.dataset.bextra);
+    if (el.checked && r.n >= 2 && e2) { announce(`🐾 Bestiário: descobriram ${(CAMPOS.find(([x]) => x === f) || [, f])[1].toLowerCase()} de ${e2.c.nome}.`); somRevela(); }
+    softRender(); return;
+  }
+  if (el.dataset.bimgurl) {
+    const u = el.value.trim(); if (!u) return;
+    if (!/^https:\/\/\S+$/i.test(u)) return toast("O link precisa começar com https://");
+    R(el.dataset.bimgurl).img = u; save(); return;
+  }
+  if (el.dataset.bimgarq) {
+    const k = el.dataset.bimgarq; const file = el.files?.[0]; el.value = ""; if (!file) return;
+    try {
+      const r = await IMG.lerArquivo(file); if (!r.data) return toast("Use uma imagem.");
+      const id = uid(); if (!(await IMG.guardar(id, r.data))) return toast("Sem espaço no navegador para guardar a imagem.");
+      R(k).img = `arq:${id}`; save();
+      if (revelaDe(k).n >= 1) enviarImagem(id);
+    } catch { toast("Não deu para ler essa imagem."); }
+    return;
+  }
 }
 app.addEventListener("click", wrapGM(onArquivoClick));
 app.addEventListener("toggle", (e) => { const k = e.target.dataset?.keep; if (k) ui[k] = e.target.open; }, true);
 app.addEventListener("change", onArquivoChange);
+app.addEventListener("input", (e) => {
+  if (e.target.id !== "bBusca") return;
+  ui.bBusca = e.target.value; const pos = e.target.selectionStart;
+  render(); const el = document.getElementById("bBusca"); if (el) { el.focus(); el.setSelectionRange(pos, pos); }
+});
+app.addEventListener("toggle", (e) => { const d = e.target; if (d.matches?.("details.beast[data-bk]")) ui.bAberta = d.open ? d.dataset.bk : (ui.bAberta === d.dataset.bk ? null : ui.bAberta); }, true);
 
 async function start() {
   if (OBR.isAvailable) {
@@ -1997,6 +2119,7 @@ async function start() {
         if (ev.data?.kind === "desejo") { if (isGM()) { guardarDesejo(ev.data.desejo); softRender(); } return; }
         if (ev.data?.kind === "circo") { const d = ev.data; if (isGM() && JOGOS[d.jogo]) { beginAction("Jogo do circo"); if (registrarCirco(d.jogo, String(d.nome || "?").slice(0, 60), Math.max(0, num(d.pts)), String(d.det || "").slice(0, 60))) announce(`🏆 ${d.nome} bateu o recorde de ${JOGOS[d.jogo][1].toLowerCase()}!`); endAction(); } return; }
         if (ev.data?.kind === "handout") return; // quem abre a pista é o background
+        if (ev.data?.kind === "pesquisa") { receberPesquisa(ev.data); return; }
         const text = ev.data?.text; if (!text) return;
         OBR.notification.show(text.split("\n")[0]);
         rollLog.unshift({ at: Date.now(), text }); rollLog = rollLog.slice(0, 40); lsSet(NS + ":log:" + roomId, JSON.stringify(rollLog)); softRender();
