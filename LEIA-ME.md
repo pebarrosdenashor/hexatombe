@@ -81,3 +81,10 @@ Só o mestre altera o estado; todos veem tudo e podem fazer as rolagens.
 Arquivos novos: `handout.html` e `handout.js` (a janela da pista). Suba os dois junto com os outros.
 
 As pistas escondidas e o bestiário viajam com o estado do ritual até o navegador dos jogadores. A tela não mostra nada, mas quem souber abrir as ferramentas do navegador conseguiria ler. Não guarde nelas segredos que quebrariam o jogo.
+
+## Novidades da versão 2.6 — pistas enviadas do computador
+- Na nova pista, **📁 Enviar do computador** aceita imagem (png, jpg, webp…), **PDF** (até 4 páginas, viram uma imagem só) ou **.txt** (vira o texto da pista). O nome do arquivo vira o título, se ele estiver vazio.
+- **📂 Várias pistas de uma vez**: escolha vários arquivos; cada um vira uma pista escondida.
+- As imagens são reduzidas (~250 KB) e ficam guardadas no navegador do mestre. Só vão para os jogadores quando a pista é revelada ou mostrada na tela; quem entrar depois pede a imagem sozinho.
+- O **backup em arquivo** agora leva as imagens junto. Se for trocar de computador, salve o backup e carregue no outro.
+- Ainda dá para usar um link de imagem, como antes.

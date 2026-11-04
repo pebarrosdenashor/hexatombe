@@ -1,4 +1,5 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
+import * as IMG from "./imagens.js";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -71,12 +72,25 @@ const SYNC = NS + "/state";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const parts = {};
-async function sendChunks(payload) {
-  const str = JSON.stringify(payload); const n = Math.max(1, Math.ceil(str.length / 5000)); const m = uid();
-  for (let i = 0; i < n; i++) { try { await OBR.broadcast.sendMessage(SYNC, { m, i, n, d: str.slice(i * 5000, (i + 1) * 5000) }); } catch { return; } if (n > 1) await sleep(60); }
+async function sendChunks(payload, tam = 5000) {
+  const str = JSON.stringify(payload); const n = Math.max(1, Math.ceil(str.length / tam)); const m = uid();
+  for (let i = 0; i < n; i++) { try { await OBR.broadcast.sendMessage(SYNC, { m, i, n, d: str.slice(i * tam, (i + 1) * tam) }); } catch { return; } if (n > 1) await sleep(70); }
 }
 const stateKey = () => NS + ":state:" + roomId;
 async function onSync(obj) {
+  // imagem de pista enviada do computador do mestre: todos guardam no navegador
+  if (obj.kind === "img" && obj.id && /^data:image\//.test(obj.data || "")) { await IMG.guardar(String(obj.id), obj.data); return; }
+  if (obj.kind === "pedeImg" && role === "GM") {
+    if (await OBR.action.isOpen()) return; // a janela aberta responde sozinha
+    try {
+      const st = JSON.parse(localStorage.getItem(stateKey()) || "null");
+      for (const id of (obj.ids || []).slice(0, 12)) {
+        if (!(st?.pistas || []).some((p) => p.revelada && p.img === `arq:${id}`)) continue; // só pistas reveladas
+        const data = await IMG.pegar(String(id)); if (data) await sendChunks({ kind: "img", id: String(id), data }, 12000);
+      }
+    } catch { /* */ }
+    return;
+  }
   if (obj.kind === "hello" && role === "GM") {
     if (await OBR.action.isOpen()) return; // a janela aberta responde sozinha
     try { const st = JSON.parse(localStorage.getItem(stateKey()) || "null"); if (st) sendChunks({ kind: "state", state: st }); } catch { /* */ }

@@ -1,4 +1,5 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
+import * as IMG from "./imagens.js";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -661,13 +662,14 @@ function guardarDesejo(d) {
 const SYNC = NS + "/state";
 const lsState = () => NS + ":state:" + roomId;
 const SCH = 5000; const syncParts = {};
-async function sendChunks(payload) {
-  if (!obrOk) return;
-  const str = JSON.stringify(payload); const n = Math.max(1, Math.ceil(str.length / SCH)); const m = uid();
+async function sendChunks(payload, tam = SCH) {
+  if (!obrOk) return false;
+  const str = JSON.stringify(payload); const n = Math.max(1, Math.ceil(str.length / tam)); const m = uid();
   for (let i = 0; i < n; i++) {
-    try { await OBR.broadcast.sendMessage(SYNC, { m, i, n, d: str.slice(i * SCH, (i + 1) * SCH) }); } catch { return; }
-    if (n > 1) await sleep(60);
+    try { await OBR.broadcast.sendMessage(SYNC, { m, i, n, d: str.slice(i * tam, (i + 1) * tam) }); } catch { return false; }
+    if (n > 1) await sleep(70);
   }
+  return true;
 }
 function onSyncChunk(data) {
   if (!data?.m) return;
@@ -680,6 +682,8 @@ let bcastTimer;
 function broadcastState() { clearTimeout(bcastTimer); bcastTimer = setTimeout(() => sendChunks({ kind: "state", state }), 150); }
 function onSync(obj) {
   if (obj.kind === "hello") { if (isGM()) broadcastState(); return; }
+  if (obj.kind === "img") { if (obj.id && /^data:image\//.test(obj.data || "")) IMG.guardar(obj.id, obj.data).then(() => imagensDaTela()); return; }
+  if (obj.kind === "pedeImg") { if (isGM()) for (const id of (obj.ids || []).slice(0, 12)) enviarImagem(String(id)); return; }
   if (obj.kind === "diario") {
     if (!isGM()) return;
     const cur = state.diarios?.[obj.ti]; if (cur && num(cur.at) > num(obj.at)) return;
@@ -1302,6 +1306,7 @@ function render() {
     <nav class="tabs">${tabsOk.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${l}</button>`).join("")}</nav>
     <main>${body}</main>`;
   window.scrollTo(0, y);
+  imagensDaTela();
 }
 function softRender() {
   const a = document.activeElement;
@@ -1535,12 +1540,21 @@ function onClick(e) {
     ag[d.sortear] = (ag[d.sortear] ? ag[d.sortear] + "\n" : "") + txt; lsSet(lsAgenda(), JSON.stringify(ag)); ui.agendaOpen = Number(d.sortear); render(); return;
   }
   if (b.id === "btnDesejosClr") { lsSet(lsDesejos(), "[]"); render(); return; }
-  if (b.id === "btnSaveFile") { downloadFile(`hexatombe-dia${state.dia}.json`, JSON.stringify({ tipo: "hexatombe", at: Date.now(), state }), "application/json"); return; }
+  if (b.id === "btnSaveFile") {
+    (async () => {
+      const usadas = new Set((state.pistas || []).filter((p) => IMG.ehArq(p.img)).map((p) => IMG.arqId(p.img)));
+      const todas = await IMG.todas(); const imagens = {}; for (const id of usadas) if (todas[id]) imagens[id] = todas[id];
+      downloadFile(`hexatombe-dia${state.dia}.json`, JSON.stringify({ tipo: "hexatombe", at: Date.now(), state, imagens }), "application/json");
+    })();
+    return;
+  }
   if (b.id === "btnLoadFile") {
     const f = document.getElementById("hxFile");
     f.onchange = async () => {
       const file = f.files[0]; f.value = ""; if (!file) return;
-      try { const o = JSON.parse(await file.text()); if (o.tipo !== "hexatombe") throw 0; beginAction("Carregar arquivo"); state = normalize(o.state); save(); endAction(); toast("Estado do ritual carregado."); }
+      try { const o = JSON.parse(await file.text()); if (o.tipo !== "hexatombe") throw 0;
+        for (const [id, data] of Object.entries(o.imagens || {})) if (/^data:image\//.test(data)) await IMG.guardar(id, data);
+        beginAction("Carregar arquivo"); state = normalize(o.state); save(); endAction(); toast("Estado do ritual carregado."); }
       catch { toast("Esse arquivo não é um estado do Hexatombe."); }
     };
     f.click(); return;
@@ -1676,10 +1690,39 @@ function abrirPista(p) {
   if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
-function mostrarPistaParaTodos(p) {
+async function mostrarPistaParaTodos(p) {
   const msg = { kind: "handout", pista: { id: p.id, titulo: p.titulo, texto: p.texto, img: p.img, para: p.para } };
-  if (obrOk) OBR.broadcast.sendMessage(CHANNEL, msg, { destination: "REMOTE" }).catch(() => toast("A pista é grande demais para enviar. Encurte o texto."));
   abrirPista(p);
+  if (!obrOk) return;
+  if (IMG.ehArq(p.img)) { toast("Enviando a imagem para os jogadores…"); await enviarImagem(IMG.arqId(p.img)); }
+  OBR.broadcast.sendMessage(CHANNEL, msg, { destination: "REMOTE" }).catch(() => toast("A pista é grande demais para enviar. Encurte o texto."));
+}
+/* ---------- Imagens enviadas do computador ---------- */
+const enviando = new Map();
+function enviarImagem(id) {
+  if (!obrOk || !isGM()) return Promise.resolve(false);
+  // só imagens de pistas reveladas saem do navegador do mestre
+  if (!(state.pistas || []).some((p) => p.revelada && p.img === `arq:${id}`)) return Promise.resolve(false);
+  if (enviando.has(id)) return enviando.get(id);
+  const pr = (async () => { const data = await IMG.pegar(id); return data ? sendChunks({ kind: "img", id, data }, 12000) : false; })()
+    .finally(() => setTimeout(() => enviando.delete(id), 4000));
+  enviando.set(id, pr); return pr;
+}
+const pedidas = new Set();
+async function imagensDaTela() {
+  const falta = await IMG.preencher(app);
+  if (isGM() || !obrOk) return;
+  const novas = falta.filter((id) => !pedidas.has(id));
+  if (!novas.length) return;
+  novas.forEach((id) => pedidas.add(id));
+  sendChunks({ kind: "pedeImg", ids: novas });
+  setTimeout(() => novas.forEach((id) => pedidas.delete(id)), 30000); // pede de novo depois, se não chegar
+}
+async function arquivoParaPista(file) {
+  const r = await IMG.lerArquivo(file);
+  let id = null;
+  if (r.data) { id = uid(); if (!(await IMG.guardar(id, r.data))) throw new Error("espaco"); }
+  return { ...r, id };
 }
 function pistaForm(p) {
   p ||= { titulo: "", texto: "", img: "", para: "todos" };
@@ -1687,18 +1730,31 @@ function pistaForm(p) {
   return `<div class="pform">
     <label>Título <input id="pTit" value="${esc(p.titulo)}" placeholder="Carta encontrada no trailer"></label>
     <label>Texto <textarea id="pTxt" rows="5" placeholder="O que os jogadores leem…">${esc(p.texto)}</textarea></label>
-    <label>Imagem (link, opcional) <input id="pImg" value="${esc(p.img)}" placeholder="https://… .png ou .jpg"></label>
+    <div class="muted small">Imagem ou documento (opcional)</div>
+    <div class="arqbox">
+      <label class="btn">📁 Enviar do computador<input type="file" id="pArq" accept="${IMG.ACEITA}" hidden></label>
+      <span class="muted small">imagem, PDF (até 4 páginas) ou .txt</span>
+      <div id="pArqPrev">${arqPrevia(ui.pArq)}</div>
+      <label class="small">ou um link <input id="pImg" value="${esc(IMG.ehArq(p.img) ? "" : p.img)}" placeholder="https://… .png ou .jpg"></label>
+    </div>
     <div class="muted small">Quem pode ver:</div>
     <div class="pick"><label class="check"><input type="checkbox" id="pTodas" ${todas ? "checked" : ""}> Todas as equipes</label>
       ${state.equipes.map((t, i) => t.membros.length ? `<label class="check"><input type="checkbox" data-pteam="${i}" ${!todas && p.para.map(Number).includes(i) ? "checked" : ""}> ${esc(t.nome)}</label>` : "").join("")}</div>
     <div class="row"><button class="primary" data-ax="pSalvar">${ui.pEdit ? "Salvar pista" : "Criar pista"}</button>${ui.pEdit ? `<button class="ghost" data-ax="pCancelar">Cancelar</button>` : ""}</div>
   </div>`;
 }
+function arqPrevia(id) {
+  return id ? `<div class="arqprev"><img data-arq="${esc(id)}" alt=""><button class="ghost small" data-ax="pArqTirar">✕ Tirar imagem</button></div>` : "";
+}
+function thumbPista(p) {
+  if (IMG.ehArq(p.img)) return `<img class="pthumb" data-arq="${esc(IMG.arqId(p.img))}" alt="">`;
+  return p.img && ytOuImg(p.img) ? `<img class="pthumb" src="${esc(p.img)}" alt="" loading="lazy">` : "";
+}
 function pistaCard(p) {
   const gm = isGM();
   return `<article class="card pista ${p.revelada ? "" : "escondida"}">
     <div class="ptop"><b>${esc(p.titulo || "Sem título")}</b>${gm ? `<span class="tag ${p.revelada ? "" : "muted"}">${p.revelada ? "revelada" : "escondida"}</span>` : ""}</div>
-    ${p.img && ytOuImg(p.img) ? `<img class="pthumb" src="${esc(p.img)}" alt="" loading="lazy">` : ""}
+    ${thumbPista(p)}
     ${p.texto ? `<p class="ptxt">${esc(p.texto.length > 220 ? p.texto.slice(0, 220) + "…" : p.texto)}</p>` : ""}
     ${gm ? `<p class="muted small">Para: ${esc(paraTxt(p))}</p>` : ""}
     <div class="row">${`<button data-ax="pAbrir" data-id="${p.id}">🔍 Ler</button>`}
@@ -1769,7 +1825,8 @@ function tabArquivo() {
   let body = "";
   if (ui.arq === "pistas") {
     body = `${gm ? `<details class="card" data-keep="pNova" ${ui.pEdit || ui.pNova ? "open" : ""}><summary><b>${ui.pEdit ? "Editando pista" : "＋ Nova pista ou documento"}</b></summary>${pistaForm(ui.pEdit ? state.pistas.find((p) => p.id === ui.pEdit) : null)}</details>
-      <p class="muted">Pistas escondidas só você vê. “Mostrar na tela” revela e abre a pista na tela dos jogadores da equipe escolhida.</p>` : `<p class="muted">Documentos, cartas e fotos que o grupo encontrou.</p>`}
+      <div class="row wrap"><button data-ax="pVarias" title="Cada arquivo vira uma pista escondida, com o nome do arquivo como título">📂 Várias pistas de uma vez</button><input type="file" id="pVariasIn" accept="${IMG.ACEITA}" multiple hidden></div>
+      <p class="muted">Pistas escondidas só você vê. “Mostrar na tela” revela e abre a pista na tela dos jogadores da equipe escolhida. Imagens do computador ficam guardadas neste navegador e só vão para os jogadores quando a pista é revelada.</p>` : `<p class="muted">Documentos, cartas e fotos que o grupo encontrou.</p>`}
       ${pistas.length ? pistas.map(pistaCard).join("") : `<section class="card"><p class="muted">${gm ? "Nenhuma pista criada." : "Nenhuma pista encontrada ainda."}</p></section>`}`;
   } else if (ui.arq === "bestiario") {
     body = `${gm ? `<details class="card" data-keep="bctlOpen" ${ui.bctlOpen ? "open" : ""}><summary><b>O que os jogadores sabem</b> <span class="muted">${vistas.length}/${ent.length}</span></summary>
@@ -1788,9 +1845,9 @@ function tabArquivo() {
 
 /* ---------- Ações ---------- */
 function pistaDoForm() {
-  const titulo = val("pTit").trim(); const texto = val("pTxt").trim(); const img = val("pImg").trim();
+  const titulo = val("pTit").trim(); const texto = val("pTxt").trim(); const img = ui.pArq ? `arq:${ui.pArq}` : val("pImg").trim();
   if (!titulo && !texto && !img) { toast("Escreva o título, o texto ou ponha uma imagem."); return null; }
-  if (img && !ytOuImg(img)) { toast("A imagem precisa ser um link começando com https://"); return null; }
+  if (img && !IMG.ehArq(img) && !ytOuImg(img)) { toast("A imagem precisa ser um link começando com https://"); return null; }
   if (texto.length > 4000) { toast("Texto muito longo (máx. 4000 caracteres)."); return null; }
   const todas = document.getElementById("pTodas")?.checked;
   const para = todas ? "todos" : [...document.querySelectorAll("[data-pteam]:checked")].map((x) => Number(x.dataset.pteam));
@@ -1838,17 +1895,21 @@ function onArquivoClick(e) {
       state.pistas ||= [];
       if (ui.pEdit) { const old = state.pistas.find((x) => x.id === ui.pEdit); Object.assign(old, novo); ui.pEdit = null; }
       else state.pistas.unshift({ id: uid(), ...novo, revelada: false, at: Date.now() });
-      ui.pNova = false; save(); toast("Pista salva (ainda escondida)."); return;
+      ui.pNova = false; ui.pArq = null; save(); toast("Pista salva (ainda escondida)."); return;
     }
-    case "pCancelar": ui.pEdit = null; return render();
-    case "pEditar": ui.pEdit = id; return render();
+    case "pCancelar": ui.pEdit = null; ui.pArq = null; return render();
+    case "pEditar": ui.pEdit = id; ui.pArq = IMG.ehArq(p?.img) ? IMG.arqId(p.img) : null; return render();
+    case "pArqTirar": ui.pArq = null; document.getElementById("pArqPrev").innerHTML = ""; return;
+    case "pVarias": document.getElementById("pVariasIn")?.click(); return;
     case "pApagar": {
       if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Confirmar?"; return; }
-      state.pistas = state.pistas.filter((x) => x.id !== id); save(); return;
+      state.pistas = state.pistas.filter((x) => x.id !== id);
+      if (p && IMG.ehArq(p.img) && !state.pistas.some((x) => x.img === p.img)) IMG.apagar(IMG.arqId(p.img));
+      save(); return;
     }
     case "pRevelar": {
       p.revelada = !p.revelada; save();
-      if (p.revelada) announce(`📜 Nova pista no Arquivo: ${p.titulo || "documento"}`);
+      if (p.revelada) { announce(`📜 Nova pista no Arquivo: ${p.titulo || "documento"}`); if (IMG.ehArq(p.img)) enviarImagem(IMG.arqId(p.img)); }
       return;
     }
     case "pMostrar": {
@@ -1861,8 +1922,35 @@ function onArquivoClick(e) {
     }
   }
 }
-function onArquivoChange(e) {
+async function onArquivoChange(e) {
   const el = e.target; if (!isGM()) return;
+  if (el.id === "pArq") {
+    const file = el.files?.[0]; el.value = ""; if (!file) return;
+    const prev = document.getElementById("pArqPrev"); if (prev) prev.innerHTML = `<p class="muted small">Preparando ${esc(file.name)}…</p>`;
+    try {
+      const r = await arquivoParaPista(file);
+      const tit = document.getElementById("pTit"); if (tit && !tit.value.trim()) tit.value = r.titulo;
+      const txt = document.getElementById("pTxt"); if (txt && r.texto && !txt.value.trim()) txt.value = r.texto;
+      if (r.id) { ui.pArq = r.id; const link = document.getElementById("pImg"); if (link) link.value = ""; }
+      if (prev) { prev.innerHTML = arqPrevia(ui.pArq); IMG.preencher(prev); }
+      if (r.aviso) toast(r.aviso);
+    } catch (err) {
+      if (prev) prev.innerHTML = arqPrevia(ui.pArq);
+      toast(err?.message === "tipo" ? "Use uma imagem, um PDF ou um .txt." : err?.message === "espaco" ? "Sem espaço no navegador para guardar a imagem." : "Não deu para ler esse arquivo.");
+    }
+    return;
+  }
+  if (el.id === "pVariasIn") {
+    const files = [...(el.files || [])]; el.value = ""; if (!files.length) return;
+    toast(`Lendo ${files.length} arquivo(s)…`);
+    let ok = 0; const falhas = [];
+    state.pistas ||= [];
+    for (const f of files.slice(0, 30)) {
+      try { const r = await arquivoParaPista(f); state.pistas.unshift({ id: uid(), titulo: r.titulo, texto: r.texto || "", img: r.id ? `arq:${r.id}` : "", para: "todos", revelada: false, at: Date.now() }); ok++; }
+      catch { falhas.push(f.name); }
+    }
+    save(); toast(`${ok} pista(s) criada(s), escondidas${falhas.length ? `. Não deu para ler: ${falhas.slice(0, 3).join(", ")}` : ""}.`); return;
+  }
   if (el.dataset.revela) {
     const k = el.dataset.revela; const n = num(el.value); const r = { ...revelaDe(k), n };
     const antes = num(revelaDe(k).n);
