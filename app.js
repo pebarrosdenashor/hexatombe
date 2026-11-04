@@ -1,5 +1,6 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import * as IMG from "./imagens.js";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -818,6 +819,7 @@ function npcCard(c, ci) {
     <div class="atks">${(c.atq || []).map((a, ai) => `<button class="primary" data-monatk="${ci}|${ai}">🎲 ${esc(a[0])} <small>${esc(a[1])} · ${esc(a[2])} ${esc(a[3])}</small></button>`).join("")}
       ${(c.extra || []).map((e, ei) => `<button data-monex="${ci}|${ei}">🎲 ${esc(e[0])} <small>${esc(e[1])}</small></button>`).join("")}</div>
     ${(c.hab || []).length ? `<ul class="plain small">${c.hab.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
+    ${(c.historia || []).length ? `<details class="small"><summary class="muted">História</summary><ul class="plain">${c.historia.map((h) => `<li>${esc(h)}</li>`).join("")}</ul></details>` : ""}
     <textarea data-npc="${c.id}|notas" rows="2" placeholder="Notas do mestre sobre este NPC…">${esc(c.notas || "")}</textarea>
   </details>`;
 }
@@ -1052,6 +1054,7 @@ function tabEquipesGM() {
       <input data-team="${ti}|nome" value="${esc(t.nome)}" ${dis()} class="tname">
       ${desertora ? `<span class="tag bad">desertora</span>` : sac ? `<span class="tag">✠ ${esc(sac.sac)}</span>` : `<span class="tag muted">sem sacrifício</span>`}
     </div>${knowTeamBox(ti)}
+    ${(t.perfil || []).length ? `<details class="perfil"><summary class="muted">📜 Perfil da equipe (só o mestre vê)</summary><ul class="plain small">${t.perfil.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
     <table class="members"><tbody>
     ${t.membros.map((m, mi) => `<tr class="${m.vivo ? "" : "dead"}">
       <td>${knowMemBox(ti, m)}${esc(mName(m))}${m.sheetId ? ` <span class="tag small" title="Ligado a uma ficha">ficha</span>` : m.npcId ? ` <span class="tag small npc" title="NPC (aba NPCs)">npc</span>` : ""}${m.des ? ` <span class="tag small bad">desertor</span>` : ""}</td>
@@ -1655,7 +1658,19 @@ function normalize(s) {
   out.equipes = (s.equipes || d.equipes).map((t, i) => ({ ...d.equipes[i % 6], ...t, membros: t.membros || [], base: t.base || [], jornada: t.jornada || [] }));
   return out;
 }
+/* Equipe gerada no Escudo do Mestre */
+function receberEquipe() {
+  if (!isGM()) return;
+  const p = lerPedido(); if (!p) return;
+  apagarPedido();
+  beginAction("Equipe do Escudo");
+  const ti = aplicarPedido(state, p, lsAgenda());
+  if (ti < 0) { endAction(); toast("Não há equipe livre para a equipe gerada."); return; }
+  save(); endAction(); tab = "equipes"; render();
+  toast(`${state.equipes[ti].nome} entrou como equipe ${ti + 1}. Os integrantes estão na aba NPCs.`);
+}
 window.addEventListener("storage", (e) => {
+  if (e.key === IMPORT_KEY && e.newValue) receberEquipe();
   if (e.key === fichaKey()) softRender();
   if (!isGM() && e.key === lsState()) { try { const x = JSON.parse(e.newValue || "null"); if (x && num(x.rev) > num(state.rev)) { state = normalize(x); softRender(); } } catch { /* */ } }
 });
@@ -1988,7 +2003,7 @@ async function start() {
       });
       OBR.player.onChange((p) => { if (p.role !== role) { role = p.role; render(); } });
       sceneOk = await OBR.scene.isReady(); OBR.scene.onReadyChange((r) => { sceneOk = r; });
-      if (isGM()) { fillOwners(); broadcastState(); } else sendChunks({ kind: "hello" });
+      if (isGM()) { fillOwners(); if (!lsGet(lsState())) lsSet(lsState(), JSON.stringify(state)); receberEquipe(); broadcastState(); } else sendChunks({ kind: "hello" });
     });
   } else {
     if (new URLSearchParams(location.search).has("gm")) role = "GM";

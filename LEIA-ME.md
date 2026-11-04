@@ -88,3 +88,6 @@ As pistas escondidas e o bestiário viajam com o estado do ritual até o navegad
 - As imagens são reduzidas (~250 KB) e ficam guardadas no navegador do mestre. Só vão para os jogadores quando a pista é revelada ou mostrada na tela; quem entrar depois pede a imagem sozinho.
 - O **backup em arquivo** agora leva as imagens junto. Se for trocar de computador, salve o backup e carregue no outro.
 - Ainda dá para usar um link de imagem, como antes.
+
+## Novidades da versão 2.7
+- Recebe as equipes criadas no gerador do Escudo do Mestre: a equipe ganha o nome, os integrantes viram NPCs (com história) e aparece um “Perfil da equipe” na aba Equipes, só para o mestre.

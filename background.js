@@ -1,5 +1,6 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import * as IMG from "./imagens.js";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -130,6 +131,23 @@ async function redFlash() {
     await OBR.scene.local.deleteItems([id]);
   } catch { /* */ }
 }
+
+/* Equipe gerada no Escudo do Mestre, com a janela do Hexatombe fechada */
+async function receberEquipe() {
+  if (role !== "GM") return;
+  if (await OBR.action.isOpen()) return; // a janela aberta cuida disso
+  const p = lerPedido(); if (!p) return;
+  try {
+    const st = JSON.parse(localStorage.getItem(stateKey()) || "null");
+    if (!st?.equipes) return; // sem ritual salvo ainda: a janela pega quando abrir
+    apagarPedido();
+    const ti = aplicarPedido(st, p, NS + ":agenda:" + roomId);
+    if (ti < 0) { OBR.notification.show("Hexatombe: não há equipe livre para a equipe gerada.", "WARNING"); return; }
+    localStorage.setItem(stateKey(), JSON.stringify(st)); sendChunks({ kind: "state", state: st });
+    OBR.notification.show(`Hexatombe: ${st.equipes[ti].nome} entrou como equipe ${ti + 1}.`, "SUCCESS");
+  } catch { /* */ }
+}
+window.addEventListener("storage", (e) => { if (e.key === IMPORT_KEY && e.newValue) receberEquipe(); });
 
 OBR.onReady(async () => {
   roomId = OBR.room.id;
