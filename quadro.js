@@ -1,7 +1,7 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.8.0";
-import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.8.0";
-import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor } from "./quadro-dados.js?v=2.8.0";
+import * as IMG from "./imagens.js?v=2.8.1";
+import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.8.1";
+import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor } from "./quadro-dados.js?v=2.8.1";
 
 /* =========================================================
    Quadro de investigação do Hexatombe (v2.8)
@@ -263,35 +263,60 @@ document.addEventListener("dblclick", (e) => {
   const c = q.cards[el.dataset.card]; if (c && ["nota", "pessoa", "foto"].includes(c.tipo)) { ui.editando = c.id; desenhar(); }
 });
 
-/* ---------- Arrastar ---------- */
+/* ---------- Arrastar ----------
+   Os movimentos são ouvidos na página inteira (não só no cartão), para o arraste
+   não se perder dentro da janela do Owlbear; e o navegador não pode iniciar o
+   "arrastar texto/imagem" dele, que cancelaria o nosso. */
 let arraste = null;
+function cartaoEl(id) { return document.querySelector(`[data-card="${CSS.escape(id)}"]`); }
+document.addEventListener("dragstart", (e) => { if (e.target.closest?.("#quadro")) e.preventDefault(); });
 $("cartoes").addEventListener("pointerdown", (e) => {
-  const el = e.target.closest("[data-card]"); if (!el || ui.ligar || e.button !== 0) return;
-  if (e.target.closest("button,textarea,input,[data-ed]")) return;
-  const c = q.cards[el.dataset.card]; if (!c || ui.editando === c.id) return;
-  arraste = { el, c: { ...c }, x0: e.clientX, y0: e.clientY, cx: c.x, cy: c.y, mexeu: false };
-  el.setPointerCapture(e.pointerId); el.classList.add("arrasta");
+  const el = e.target.closest("[data-card]"); if (!el || ui.ligar) return;
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  if (e.target.closest("button,textarea,input,select,[data-ed]")) return;
+  const c = q.cards[el.dataset.card]; if (!c) return;
+  if (ui.editando === c.id) return; // escrevendo neste cartão
+  if (ui.editando) terminarEdicao(); // clicou em outro: termina a edição e já pode arrastar
+  e.preventDefault(); // sem seleção de texto nem arraste do próprio navegador
+  arraste = { id: c.id, x0: e.clientX, y0: e.clientY, cx: c.x, cy: c.y, mexeu: false, pid: e.pointerId };
+  const atual = cartaoEl(c.id); atual?.classList.add("arrasta"); atual?.focus({ preventScroll: true });
+  try { atual?.setPointerCapture(e.pointerId); } catch { /* segue sem captura: a página toda escuta */ }
 });
-$("cartoes").addEventListener("pointermove", (e) => {
-  if (!arraste) return;
+document.addEventListener("pointermove", (e) => {
+  if (!arraste || (arraste.pid !== undefined && e.pointerId !== arraste.pid)) return;
+  if (e.pointerType === "mouse" && e.buttons === 0) return soltar(); // soltou fora da janela
   const dx = (e.clientX - arraste.x0) / zoom, dy = (e.clientY - arraste.y0) / zoom;
   if (!arraste.mexeu && Math.hypot(dx, dy) < 3) return;
   arraste.mexeu = true;
-  arraste.c.x = clamp(arraste.cx + dx, 0, LARG - 60); arraste.c.y = clamp(arraste.cy + dy, 0, ALT - 60);
-  arraste.el.style.left = arraste.c.x + "px"; arraste.el.style.top = arraste.c.y + "px";
-  q.cards[arraste.c.id] = { ...q.cards[arraste.c.id], x: arraste.c.x, y: arraste.c.y };
-  desenharFios(); salvarDevagar({ ...q.cards[arraste.c.id] });
+  const c = q.cards[arraste.id]; if (!c || c.del) { arraste = null; return; }
+  const x = clamp(arraste.cx + dx, 0, LARG - 60), y = clamp(arraste.cy + dy, 0, ALT - 60);
+  q.cards[arraste.id] = { ...c, x, y };
+  const el = cartaoEl(arraste.id); // pode ter sido redesenhado no meio do caminho
+  if (el) { el.style.left = x + "px"; el.style.top = y + "px"; el.classList.add("arrasta"); }
+  desenharFios(); salvarDevagar({ ...q.cards[arraste.id] });
 });
 function soltar() {
   if (!arraste) return;
-  const a = arraste; arraste = null; a.el.classList.remove("arrasta");
-  if (a.mexeu) salvar({ cards: { [a.c.id]: { ...q.cards[a.c.id] } }, fios: {} });
+  const a = arraste; arraste = null;
+  cartaoEl(a.id)?.classList.remove("arrasta");
+  if (a.mexeu) salvar({ cards: { [a.id]: { ...q.cards[a.id] } }, fios: {} });
 }
-$("cartoes").addEventListener("pointerup", soltar);
-$("cartoes").addEventListener("pointercancel", soltar);
+document.addEventListener("pointerup", soltar);
+document.addEventListener("pointercancel", soltar);
+window.addEventListener("blur", soltar);
+// setas do teclado movem o cartão selecionado (Shift = passo maior)
+document.addEventListener("keydown", (e) => {
+  const el = document.activeElement?.closest?.("[data-card]"); if (!el || ui.editando) return;
+  const passo = e.shiftKey ? 40 : 10; const d = { ArrowLeft: [-passo, 0], ArrowRight: [passo, 0], ArrowUp: [0, -passo], ArrowDown: [0, passo] }[e.key];
+  if (!d) return; e.preventDefault();
+  const c = q.cards[el.dataset.card]; if (!c) return;
+  const novo = { ...c, x: clamp(c.x + d[0], 0, LARG - 60), y: clamp(c.y + d[1], 0, ALT - 60) };
+  el.style.left = novo.x + "px"; el.style.top = novo.y + "px";
+  salvar({ cards: { [c.id]: novo }, fios: {} }); desenharFios();
+});
 // arrastar o fundo do quadro rola a vista
 let rolando = null;
-$("vista").addEventListener("pointerdown", (e) => { if (e.target.closest("[data-card],[data-fio],.rotulo") || e.button !== 0) return; rolando = { x: e.clientX, y: e.clientY, l: $("vista").scrollLeft, t: $("vista").scrollTop }; });
+$("vista").addEventListener("pointerdown", (e) => { if (e.target.closest("[data-card],[data-fio],.rotulo") || e.button !== 0) return; if (ui.editando) terminarEdicao(); rolando = { x: e.clientX, y: e.clientY, l: $("vista").scrollLeft, t: $("vista").scrollTop }; });
 window.addEventListener("pointermove", (e) => { if (!rolando) return; $("vista").scrollLeft = rolando.l - (e.clientX - rolando.x); $("vista").scrollTop = rolando.t - (e.clientY - rolando.y); });
 window.addEventListener("pointerup", () => { rolando = null; });
 $("vista").addEventListener("wheel", (e) => { if (!e.ctrlKey) return; e.preventDefault(); const r = $("vista").getBoundingClientRect(); aplicarZoom(zoom * (e.deltaY < 0 ? 1.1 : 0.9), { x: e.clientX - r.left, y: e.clientY - r.top }); }, { passive: false });

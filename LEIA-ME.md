@@ -110,3 +110,6 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
 - **Pesquisa dos jogadores:** marque “Jogadores podem pesquisar” e a DT. Cada jogador rola Ocultismo pela ficha, uma vez por nível; quem passa sobe a criatura um nível (até estudada; dissecar é com você). Funciona com a sua janela fechada.
 - O que muda para o jogador brilha na hora, e a revelação toca um som pela caixa do Escudo do Mestre.
 - Os níveis antigos foram ajustados sozinhos (avistada, estudada e dissecada continuam as mesmas).
+
+## Versão 2.8.1
+- Quadro: arrastar os cartões ficou mais firme dentro do Owlbear (o arraste não se perde nem é cancelado pelo navegador). Clicar em outro cartão ou no fundo termina a edição de uma nota que ficou aberta, em vez de travá-la. Setas do teclado movem o cartão selecionado (Shift = passo maior).
