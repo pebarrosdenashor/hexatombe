@@ -1,5 +1,5 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.0";
+import * as IMG from "./imagens.js?v=2.9.1";
 
 const NS = "io.github.pebarrosdenashor.hexatombe";
 const KEY = NS + ":handout";

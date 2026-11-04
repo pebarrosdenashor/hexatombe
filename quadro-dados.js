@@ -67,7 +67,7 @@ export function tokenServe(it, gm) { return it?.type === "IMAGE" && CAMADAS_TOKE
 export function cardDeToken(it, autor, x = LARG / 2, y = ALT / 2) {
   return { id: uid(), tipo: "token", ref: corta(it.id, 120), titulo: nomeToken(it), txt: "", url: corta(it.image.url, 600), cor: "",
     x: clamp(x - 75 + (Math.random() - 0.5) * 420, 20, LARG - 220), y: clamp(y - 80 + (Math.random() - 0.5) * 260, 20, ALT - 240),
-    rot: Math.round((Math.random() - 0.5) * 8 * 10) / 10, autor: corta(autor, 60), at: Date.now() };
+    rot: 0, autor: corta(autor, 60), at: Date.now() };
 }
 
 /* ---------- Mensagens em partes ---------- */

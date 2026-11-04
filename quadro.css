@@ -66,12 +66,12 @@ input, textarea, select { font: inherit; color: var(--text); background: var(--p
 .qc.pessoa .rosto { height: 90px; display: grid; place-items: center; background: linear-gradient(#cfc8bd, #a9a196); font-family: Cinzel, serif; font-size: 34px; color: #4a4038; margin-bottom: 6px; }
 .qc.pessoa .t { text-align: center; font-family: "Permanent Marker", cursive; font-weight: 400; font-size: 16px; }
 .qc.foto { background: #fff; width: 180px; padding-bottom: 14px; }
-.qc.token { background: #1d1214; color: #f0e9ea; width: 150px; border: 1px solid #6b2a35; padding-bottom: 10px; }
-.qc.token .moldura { width: 110px; height: 110px; margin: 2px auto 6px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle, #3a2a2e, #120a0c); box-shadow: 0 0 0 3px #c8a46b, 0 0 0 5px #3d2412, 0 3px 8px rgba(0,0,0,.6); }
-.qc.token .moldura img { width: 100%; height: 100%; max-height: none; object-fit: contain; background: transparent; }
-.qc.token .t { text-align: center; font-family: Cinzel, serif; font-size: 13px; letter-spacing: .04em; color: #ffd9b0; }
-.qc.token .x { font-size: 12px; text-align: center; color: #e6d9c8; }
-.qc.token textarea { background: rgba(255,255,255,.85); }
+.qc.token { background: none; border: 0; box-shadow: none; padding: 0; width: 140px; color: #f0e9ea; }
+.qc.token.arrasta { box-shadow: none; }
+.qc.token img.tk { display: block; width: 140px; height: auto; max-height: 180px; object-fit: contain; background: none; filter: drop-shadow(2px 5px 5px rgba(0,0,0,.55)); }
+.qc.token .x { margin-top: 4px; font-size: 12px; text-align: center; background: rgba(15,8,10,.8); border-radius: 4px; padding: 2px 6px; }
+.qc.token .ctl { top: -4px; right: -4px; }
+.qc.token textarea { background: rgba(255,255,255,.85); margin-top: 4px; }
 .janela .lista.tokens { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .janela .lista.tokens button { display: flex; align-items: center; gap: 8px; }
 .janela .lista.tokens img { width: 36px; height: 36px; object-fit: contain; border-radius: 50%; background: #2a1d20; flex: 0 0 36px; }

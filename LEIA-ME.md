@@ -119,3 +119,6 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
 - O cartão mostra a imagem do token numa moldura redonda e o nome dele. Duas vezes no cartão para escrever uma anotação embaixo.
 - Jogadores só veem e prendem tokens visíveis; o mestre vê também os escondidos (marcados).
 - A imagem é a mesma do token: se o token for apagado do mapa, o cartão continua no quadro.
+
+## Versão 2.9.1
+- Tokens no quadro aparecem do jeito que estão na sala: só a imagem, sem moldura, fundo, alfinete ou inclinação. O nome aparece ao passar o mouse; a anotação (se houver) fica numa etiqueta pequena embaixo.

@@ -1,7 +1,7 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.0";
-import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.0";
-import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.0";
+import * as IMG from "./imagens.js?v=2.9.1";
+import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.1";
+import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.1";
 
 /* =========================================================
    Quadro de investigação do Hexatombe (v2.8)
@@ -95,18 +95,19 @@ function conteudo(c, st) {
     return `<div class="${r.n === 1 ? "silh" : ""}">${silhueta(r)}</div><div class="t">${r.n >= 2 ? esc(nomeCriatura(st, c.ref)) : "???"}</div><div class="nivel">${NIVEL_CURTO[r.n]}${r.n === 1 && r.rumor ? ` · “${esc(r.rumor.slice(0, 60))}”` : ""}</div>`;
   }
   if (c.tipo === "pessoa") return `<div class="rosto">${esc((c.titulo || "?").trim().slice(0, 1).toUpperCase())}</div><div class="t">${esc(c.titulo || "Sem nome")}</div>${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
-  if (c.tipo === "token") return `<div class="moldura">${c.url ? `<img src="${esc(c.url)}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(c.titulo || "Token")}</div>${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
+  // o token do jeito que está na sala: só a imagem (o nome aparece ao passar o mouse)
+  if (c.tipo === "token") return `${c.url ? `<img class="tk" src="${esc(c.url)}" alt="${esc(c.titulo || "Token")}" loading="lazy" draggable="false">` : ""}${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
   if (c.tipo === "foto") return `${c.url ? `<img src="${esc(c.url)}" alt="" loading="lazy">` : `<div class="rosto" style="height:110px;display:grid;place-items:center;background:#ddd;color:#777">sem foto</div>`}${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
   return `<div class="x">${esc(c.txt) || "<i style=opacity:.5>(nota vazia)</i>"}</div>`;
 }
 function cardHTML(c, st) {
   const editavel = ["nota", "pessoa", "foto", "token"].includes(c.tipo);
   return `<div class="qc ${c.tipo} ${c.tipo === "nota" ? esc(c.cor || "") : ""} ${ui.sel === c.id ? "sel" : ""} ${ui.novos.has(c.id) ? "novo" : ""}" data-card="${esc(c.id)}" tabindex="0"
-      style="left:${c.x}px;top:${c.y}px;transform:rotate(${c.rot}deg)" aria-label="${esc(c.tipo)}">
-    <span class="pino"></span>
+      style="left:${c.x}px;top:${c.y}px;transform:rotate(${c.tipo === "token" ? 0 : c.rot}deg)" aria-label="${esc(c.tipo === "token" ? c.titulo || "Token" : c.tipo)}" ${c.tipo === "token" ? `title="${esc(c.titulo || "Token")}"` : ""}>
+    ${c.tipo === "token" ? "" : `<span class="pino"></span>`}
     <span class="ctl">${editavel ? `<button data-q="editar" data-id="${esc(c.id)}" title="Editar">✎</button>` : ""}<button data-q="ligarDe" data-id="${esc(c.id)}" title="Ligar com barbante">🧶</button><button data-q="apagar" data-id="${esc(c.id)}" class="${ui.confirmar === c.id ? "confirm" : ""}" title="${ui.confirmar === c.id ? "Clique de novo para tirar do quadro" : "Tirar do quadro"}">${ui.confirmar === c.id ? "?" : "✕"}</button></span>
     ${conteudo(c, st)}
-    ${c.autor ? `<div class="autor">por ${esc(c.autor)}</div>` : ""}
+    ${c.autor && c.tipo !== "token" ? `<div class="autor">por ${esc(c.autor)}</div>` : ""}
   </div>`;
 }
 function pinoDe(id) {
