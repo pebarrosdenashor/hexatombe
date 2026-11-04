@@ -9,7 +9,7 @@
 export const NS = "io.github.pebarrosdenashor.hexatombe";
 export const QCH = NS + "/quadro";
 export const LARG = 2400, ALT = 1600; // tamanho do quadro
-export const TIPOS = ["nota", "pista", "criatura", "pessoa", "foto"];
+export const TIPOS = ["nota", "pista", "criatura", "pessoa", "foto", "token"];
 const num = (v) => Number(v) || 0;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const corta = (v, n) => String(v ?? "").slice(0, n);
@@ -58,6 +58,17 @@ function podar(q) {
 }
 export const vivos = (q, t) => Object.values(q[t]).filter((x) => !x.del);
 export function novoId() { return uid(); }
+
+/* ---------- Tokens do mapa (v2.9) ---------- */
+export const CAMADAS_TOKEN = ["CHARACTER", "MOUNT", "PROP"];
+export function nomeToken(it) { return String(it?.text?.plainText || it?.name || "Token").trim().slice(0, 80) || "Token"; }
+export function tokenServe(it, gm) { return it?.type === "IMAGE" && CAMADAS_TOKEN.includes(it.layer) && /^https:\/\//i.test(it.image?.url || "") && (gm || it.visible !== false); }
+/* Cartão de um token, perto de (x, y) no quadro */
+export function cardDeToken(it, autor, x = LARG / 2, y = ALT / 2) {
+  return { id: uid(), tipo: "token", ref: corta(it.id, 120), titulo: nomeToken(it), txt: "", url: corta(it.image.url, 600), cor: "",
+    x: clamp(x - 75 + (Math.random() - 0.5) * 420, 20, LARG - 220), y: clamp(y - 80 + (Math.random() - 0.5) * 260, 20, ALT - 240),
+    rot: Math.round((Math.random() - 0.5) * 8 * 10) / 10, autor: corta(autor, 60), at: Date.now() };
+}
 
 /* ---------- Mensagens em partes ---------- */
 export function enviador(OBR) {

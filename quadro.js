@@ -1,7 +1,7 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.8.1";
-import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.8.1";
-import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor } from "./quadro-dados.js?v=2.8.1";
+import * as IMG from "./imagens.js?v=2.9.0";
+import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.0";
+import { NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.0";
 
 /* =========================================================
    Quadro de investigação do Hexatombe (v2.8)
@@ -95,11 +95,12 @@ function conteudo(c, st) {
     return `<div class="${r.n === 1 ? "silh" : ""}">${silhueta(r)}</div><div class="t">${r.n >= 2 ? esc(nomeCriatura(st, c.ref)) : "???"}</div><div class="nivel">${NIVEL_CURTO[r.n]}${r.n === 1 && r.rumor ? ` · “${esc(r.rumor.slice(0, 60))}”` : ""}</div>`;
   }
   if (c.tipo === "pessoa") return `<div class="rosto">${esc((c.titulo || "?").trim().slice(0, 1).toUpperCase())}</div><div class="t">${esc(c.titulo || "Sem nome")}</div>${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
+  if (c.tipo === "token") return `<div class="moldura">${c.url ? `<img src="${esc(c.url)}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(c.titulo || "Token")}</div>${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
   if (c.tipo === "foto") return `${c.url ? `<img src="${esc(c.url)}" alt="" loading="lazy">` : `<div class="rosto" style="height:110px;display:grid;place-items:center;background:#ddd;color:#777">sem foto</div>`}${c.txt ? `<div class="x">${esc(c.txt)}</div>` : ""}`;
   return `<div class="x">${esc(c.txt) || "<i style=opacity:.5>(nota vazia)</i>"}</div>`;
 }
 function cardHTML(c, st) {
-  const editavel = ["nota", "pessoa", "foto"].includes(c.tipo);
+  const editavel = ["nota", "pessoa", "foto", "token"].includes(c.tipo);
   return `<div class="qc ${c.tipo} ${c.tipo === "nota" ? esc(c.cor || "") : ""} ${ui.sel === c.id ? "sel" : ""} ${ui.novos.has(c.id) ? "novo" : ""}" data-card="${esc(c.id)}" tabindex="0"
       style="left:${c.x}px;top:${c.y}px;transform:rotate(${c.rot}deg)" aria-label="${esc(c.tipo)}">
     <span class="pino"></span>
@@ -141,7 +142,7 @@ function desenhar() {
 }
 function acoes() {
   $("acoes").innerHTML = `<button data-q="nota" title="Prender um papel com anotação">📝 Nota</button><button data-q="pista" title="Prender um documento do Arquivo">📜 Pista</button>
-    <button data-q="criatura" title="Prender uma criatura do Bestiário">🐾 Criatura</button><button data-q="pessoa" title="Prender uma pessoa (suspeito, NPC)">👤 Pessoa</button><button data-q="foto" title="Prender uma foto por link">📷 Foto</button>
+    <button data-q="criatura" title="Prender uma criatura do Bestiário">🐾 Criatura</button><button data-q="pessoa" title="Prender uma pessoa (suspeito, NPC)">👤 Pessoa</button><button data-q="foto" title="Prender uma foto por link">📷 Foto</button>${obrOk ? `<button data-q="token" title="Prender um token do mapa">🎭 Token</button>` : ""}
     <button data-q="ligar" class="${ui.ligar ? "on" : ""}" title="Clique em dois cartões para ligar com barbante">🧶 Ligar</button>
     ${isGM() ? `<button data-q="limpar" class="perigo ${ui.confirmar === "limpar" ? "on" : ""}" title="Tira tudo do quadro, para todos">${ui.confirmar === "limpar" ? "Confirmar: limpar tudo?" : "🗑 Limpar"}</button>` : ""}`;
   $("zoomTxt").textContent = Math.round(zoom * 100) + "%";
@@ -167,6 +168,21 @@ function escolherPista() {
   const st = hx(); const ps = pistasVisiveis(st);
   janela(`<h3>Prender uma pista</h3>${ps.length ? `<div class="lista">${ps.map((p) => `<button data-q="addPista" data-id="${esc(p.id)}">📜 ${esc(p.titulo || "Documento")}${p.texto ? `<br><span class="muted">${esc(p.texto.slice(0, 80))}</span>` : ""}</button>`).join("")}</div>` : `<p class="muted">${isGM() ? "Nenhuma pista revelada ainda. Revele no Hexatombe → Arquivo → Pistas." : "O grupo ainda não encontrou pistas."}</p>`}
     <div class="linha"><button data-q="fecharJanela">Fechar</button></div>`);
+}
+/* Tokens da cena aberta no Owlbear (jogadores só veem os visíveis) */
+let tokensCena = [];
+async function escolherToken() {
+  janela(`<h3>Prender um token do mapa</h3><p class="muted">Procurando tokens na cena…</p>`);
+  try {
+    if (!(await OBR.scene.isReady())) { janela(`<h3>Prender um token do mapa</h3><p class="muted">Abra uma cena no Owlbear primeiro.</p><div class="linha"><button data-q="fecharJanela">Fechar</button></div>`); return; }
+    const its = (await OBR.scene.items.getItems((it) => tokenServe(it, isGM()))).sort((a, b) => nomeToken(a).localeCompare(nomeToken(b)));
+    // tokens repetidos (mesma imagem e nome) aparecem uma vez só
+    const vistos = new Set(); tokensCena = its.filter((it) => { const k = nomeToken(it) + "|" + it.image.url; if (vistos.has(k)) return false; vistos.add(k); return true; });
+  } catch { tokensCena = []; }
+  janela(`<h3>Prender um token do mapa</h3>${tokensCena.length ? `<input id="tkBusca" placeholder="🔍 Buscar…" style="width:100%;margin-bottom:8px"><div class="lista tokens">${tokensCena.map((it, i) => `<button data-q="addToken" data-i="${i}" data-nome="${esc(nomeToken(it).toLowerCase())}"><img src="${esc(it.image.url)}" alt="" loading="lazy"> ${esc(nomeToken(it))}${isGM() && it.visible === false ? ' <span class="muted">(escondido)</span>' : ""}</button>`).join("")}</div>`
+    : `<p class="muted">Nenhum token nesta cena.</p>`}
+    <p class="muted">Também dá para clicar com o botão direito num token do mapa → “📌 Prender no quadro”.</p><div class="linha"><button data-q="fecharJanela">Fechar</button></div>`);
+  $("tkBusca")?.addEventListener("input", (e) => { const t = e.target.value.toLowerCase(); document.querySelectorAll("[data-q=addToken]").forEach((b) => { b.style.display = b.dataset.nome.includes(t) ? "" : "none"; }); });
 }
 function escolherCriatura() {
   const st = hx(); const cs = criaturasVisiveis(st);
@@ -226,6 +242,12 @@ document.addEventListener("click", (e) => {
     case "criatura": return escolherCriatura();
     case "addPista": fecharJanela(); novoCard("pista", { ref: id }); return;
     case "addCriatura": fecharJanela(); novoCard("criatura", { ref: id }); return;
+    case "token": return escolherToken();
+    case "addToken": {
+      const it = tokensCena[Number(b.dataset.i)]; if (!it) return; fecharJanela();
+      const v = $("vista"); const c = cardDeToken(it, me.name, (v.scrollLeft + v.clientWidth / 2) / zoom, (v.scrollTop + v.clientHeight / 2) / zoom);
+      ui.novos.add(c.id); salvar({ cards: { [c.id]: c }, fios: {} }); desenhar(); return;
+    }
     case "ler": return lerPista(id);
     case "ligar": ui.ligar = !ui.ligar; ui.sel = null; dica(ui.ligar ? "Clique em dois cartões para ligá-los com barbante." : "", ui.ligar); return desenhar();
     case "ligarDe": ui.ligar = true; ui.sel = id; dica("Agora clique no outro cartão.", true); return desenhar();
@@ -260,7 +282,7 @@ document.addEventListener("keydown", (e) => {
 });
 document.addEventListener("dblclick", (e) => {
   const el = e.target.closest("[data-card]"); if (!el || ui.ligar) return;
-  const c = q.cards[el.dataset.card]; if (c && ["nota", "pessoa", "foto"].includes(c.tipo)) { ui.editando = c.id; desenhar(); }
+  const c = q.cards[el.dataset.card]; if (c && ["nota", "pessoa", "foto", "token"].includes(c.tipo)) { ui.editando = c.id; desenhar(); }
 });
 
 /* ---------- Arrastar ----------

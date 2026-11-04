@@ -1,8 +1,8 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.8.1";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.8.1";
-import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.8.1";
-import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor } from "./quadro-dados.js?v=2.8.1";
+import * as IMG from "./imagens.js?v=2.9.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.9.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -55,7 +55,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.8.1", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
@@ -167,6 +167,25 @@ const recebeQ = receptor((p) => {
   }
 });
 
+/* Clique direito num token → "Prender no quadro" (v2.9) */
+function menuQuadro() {
+  OBR.contextMenu.create({
+    id: NS + "/quadro-token",
+    icons: [{ icon: new URL("icon.svg", location.href).href, label: "📌 Prender no quadro",
+      filter: { every: [{ key: "type", value: "IMAGE" }, ...CAMADAS_TOKEN.map((l, i) => (i < CAMADAS_TOKEN.length - 1 ? { key: "layer", value: l, coordinator: "||" } : { key: "layer", value: l }))] } }],
+    async onClick(ctx) {
+      const its = ctx.items.filter((it) => tokenServe(it, role === "GM")).slice(0, 12);
+      if (!its.length) return OBR.notification.show("Esse token não pode ir para o quadro (precisa ser uma imagem visível).", "WARNING");
+      let nome = "?"; try { nome = await OBR.player.getName(); } catch { /* */ }
+      const q = lerQuadro(roomId); const cards = {};
+      for (const it of its) { const c = cardDeToken(it, nome); cards[c.id] = c; }
+      mesclar(q, { cards, fios: {} }); gravarQuadro(roomId, q); // a janela do quadro, se aberta, vê pela mudança no navegador
+      enviarQ?.({ k: "op", q: { cards, fios: {} } });
+      OBR.notification.show(`📌 ${its.length === 1 ? "Token preso" : `${its.length} tokens presos`} no quadro de investigação.`, "SUCCESS");
+    },
+  });
+}
+
 /* Equipe gerada no Escudo do Mestre, com a janela do Hexatombe fechada */
 async function receberEquipe() {
   if (role !== "GM") return;
@@ -191,6 +210,7 @@ OBR.onReady(async () => {
   OBR.broadcast.onMessage(SYNC, (ev) => onChunk(ev.data));
   enviarQ = enviador(OBR);
   OBR.broadcast.onMessage(QCH, (ev) => recebeQ(ev.data));
+  menuQuadro();
   OBR.broadcast.onMessage(CHANNEL, async (ev) => {
     const d = ev.data || {};
     if (d.kind === "desejo") { if (role === "GM" && d.desejo) guardarDesejo(d.desejo); return; }

@@ -113,3 +113,9 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
 
 ## Versão 2.8.1
 - Quadro: arrastar os cartões ficou mais firme dentro do Owlbear (o arraste não se perde nem é cancelado pelo navegador). Clicar em outro cartão ou no fundo termina a edição de uma nota que ficou aberta, em vez de travá-la. Setas do teclado movem o cartão selecionado (Shift = passo maior).
+
+## Versão 2.9
+- **Tokens no quadro:** botão **🎭 Token** no quadro lista os tokens da cena aberta (com busca); clique para prender. Ou, no mapa, clique com o botão direito num token (ou em vários selecionados) → **📌 Prender no quadro**.
+- O cartão mostra a imagem do token numa moldura redonda e o nome dele. Duas vezes no cartão para escrever uma anotação embaixo.
+- Jogadores só veem e prendem tokens visíveis; o mestre vê também os escondidos (marcados).
+- A imagem é a mesma do token: se o token for apagado do mapa, o cartão continua no quadro.
