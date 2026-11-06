@@ -134,3 +134,27 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
 
 - **Prato do mestre**: os dados que o mestre rola no Hexatombe e no Painel do Mestre caem num prato de dados só dele, com a mesma aparência escolhida na ficha (Dados › Aparência dos dados e do prato). Nada é enviado pela sala: os jogadores nunca veem esse prato.
 - O botão 🎲 no canto de baixo reabre o prato; 🕘 mostra as últimas rolagens do mestre (das três extensões) e 📌 deixa o prato aberto.
+
+
+## Extensão separada: Mapa do Hexatombe (pasta `mapa/`)
+
+Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à parte, com manifesto próprio.
+
+**Instalar:** no Owlbear, **Extensions → Add Extension** e cole `https://pebarrosdenashor.github.io/hexatombe/mapa/manifest.json`.
+
+**Mestre**
+- Cada local tem três estados: **Oculto** (os jogadores não sabem que existe), **Avistado** (aparece no mapa só com o nome) e **Explorado** (aparece com o tipo e o que estiver liberado). Ao marcar Explorado, tudo é liberado de uma vez; depois dá para esconder partes.
+- Cada parte do local é liberada separada: de quem é a base, descrição, cada detalhe, alerta e o dia em que afunda. As **notas do mestre** nunca aparecem para os jogadores.
+- Tudo é editável: nome, tipo, equipe, textos, detalhes (adicionar e remover). Dá para criar locais novos e mover locais clicando no mapa.
+- "Liberado em cada dia" mostra o que foi revelado em cada dia do ritual.
+- "Ver como jogador" mostra exatamente o que a mesa vê.
+- O dia vem da extensão Hexatombe quando ela está na sala (pode desligar em Ajustes e escolher o dia à mão).
+- "Pôr mapa do dia na cena" coloca a imagem do dia na camada de mapa, travada. Com a opção ligada em Ajustes, a imagem troca sozinha quando o dia muda.
+- Os textos ficam guardados no navegador do mestre. Use **Baixar cópia** antes de trocar de computador.
+
+**Jogadores** veem o mapa com a água do dia, os locais liberados e uma lista do que descobriram em cada dia. Recebem um aviso quando o mestre libera algo novo.
+
+**Imagens estáticas** (2000 × 1400, para usar como mapa da cena ou imprimir):
+- `mapa/imagens/dia-1.png` a `dia-6.png`: só a cidade, sem os locais (para os jogadores).
+- `mapa/imagens/mestre-dia-1.png` a `mestre-dia-6.png`: com todos os locais marcados.
+- `mapa/gerar.html?dia=3&mestre=1` desenha o mapa no navegador, caso queira gerar de novo.

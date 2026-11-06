@@ -1,0 +1,15 @@
+{
+  "name": "Mapa do Hexatombe",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Mapa do Hexatombe",
+    "icon": "https://pebarrosdenashor.github.io/hexatombe/mapa/icon.svg",
+    "popover": "https://pebarrosdenashor.github.io/hexatombe/mapa/index.html",
+    "height": 820,
+    "width": 560
+  },
+  "background_url": "https://pebarrosdenashor.github.io/hexatombe/mapa/background.html",
+  "author": "pebarrosdenashor",
+  "description": "Mapa de Bom Jesus do Açude: a represa volta dia a dia, e o mestre libera o que os jogadores sabem de cada local."
+}

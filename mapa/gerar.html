@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Gerar imagem do mapa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  html,body{margin:0;background:#1d3239}
+  svg{display:block;width:2000px;height:1400px}
+  .loc text{font-family:"Alegreya Sans","Trebuchet MS",sans-serif;font-size:15px;font-weight:700;fill:#e6dcc4;paint-order:stroke;stroke:#14171a;stroke-width:4.5px;stroke-linejoin:round}
+  .loc.base text{font-family:"Alegreya SC",Georgia,serif;font-size:16.5px}
+  .loc.afogado{opacity:.45}
+  .loc.afogado text{text-decoration:line-through}
+</style>
+</head>
+<body>
+<!-- ?dia=1..6  &mestre=1 (com os locais marcados) -->
+<svg id="mapa"></svg>
+<script type="module">
+  import { montarCidade, alagaPorPosicao, CSS_MAPA, el } from "./cidade.js";
+  import { LOCAIS_PADRAO, EQUIPES } from "./locais.js";
+  const p = new URLSearchParams(location.search);
+  const dia = Math.min(6, Math.max(1, +p.get("dia") || 1));
+  const st = document.createElement("style"); st.textContent = CSS_MAPA; document.head.appendChild(st);
+  const svg = document.getElementById("mapa");
+  svg.classList.add("sem-animacao");
+  const c = montarCidade(svg, LOCAIS_PADRAO.filter((l) => l.id !== "igreja").map((l) => [l.x, l.y]));
+  c.setDia(dia);
+  if (p.get("mestre") === "1") {
+    const hex = (r) => { let s = ""; for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i - Math.PI / 2; s += (i ? "L" : "M") + (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1); } return s + "Z"; };
+    for (const l0 of LOCAIS_PADRAO) {
+      const l = { ...l0 }; if (l.id === "igreja") [l.x, l.y] = c.igreja;
+      const af = l.alaga ?? alagaPorPosicao(l.x, l.y);
+      const g = el("g", { class: "loc" + (l.tipo === "base" ? " base" : "") + (af && dia >= af ? " afogado" : ""), transform: `translate(${l.x},${l.y})` });
+      if (l.tipo === "base") g.appendChild(el("path", { d: hex(13), fill: EQUIPES[l.eq], stroke: "#14171a", "stroke-width": 2 }));
+      else if (l.tipo === "enigma") g.appendChild(el("path", { d: "M0,-12 L12,0 L0,12 L-12,0 Z", fill: "#b23a2e", stroke: "#14171a", "stroke-width": 2 }));
+      else g.appendChild(el("circle", { r: 6.5, fill: "#e6dcc4", stroke: "#14171a", "stroke-width": 2 }));
+      const t = el("text", { x: l.lx ?? 0, y: l.ly ?? (l.anchor ? 5 : (l.tipo === "base" ? 32 : 22)), "text-anchor": l.anchor || "middle" });
+      t.textContent = l.nome; g.appendChild(t); c.camada.appendChild(g);
+    }
+  }
+  document.fonts.ready.then(() => document.body.dataset.pronto = "1");
+</script>
+</body>
+</html>

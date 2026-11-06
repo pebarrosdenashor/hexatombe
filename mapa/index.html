@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa do Hexatombe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css?v=1.0.0">
+</head>
+<body>
+  <div class="app">
+    <header id="topo" class="topo"></header>
+    <div class="corpo">
+      <div class="mapbox" id="mapbox">
+        <div class="zoom" aria-label="Controles de zoom">
+          <button type="button" id="z-mais" aria-label="Aproximar">+</button>
+          <button type="button" id="z-menos" aria-label="Afastar">−</button>
+          <button type="button" id="z-reset" aria-label="Ver mapa inteiro">⤢</button>
+          <span class="dica" id="z-nivel">1×</span>
+        </div>
+        <div class="viewport"><svg id="mapa" role="img" aria-label="Mapa de Bom Jesus do Açude"></svg></div>
+        <div class="nivel"><span>Nível da água: <strong id="cota">cota 382 m</strong></span><span class="mini">Roda do mouse ou pinça para zoom · arraste para mover</span></div>
+      </div>
+      <aside id="painel" class="painel"></aside>
+    </div>
+  </div>
+  <script type="module" src="app.js?v=1.0.0"></script>
+</body>
+</html>
