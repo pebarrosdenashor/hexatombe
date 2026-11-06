@@ -1,7 +1,7 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.3";
-import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.3";
-import { TAM_OK, NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.3";
+import * as IMG from "./imagens.js?v=2.9.4";
+import { revelaDe, NIVEL_CURTO } from "./bestiario.js?v=2.9.4";
+import { TAM_OK, NS, LARG, ALT, ler, gravar, mesclar, vivos, novoId, enviador, qKey, QCH, receptor, tokenServe, nomeToken, cardDeToken } from "./quadro-dados.js?v=2.9.4";
 
 /* =========================================================
    Quadro de investigação do Hexatombe (v2.8)

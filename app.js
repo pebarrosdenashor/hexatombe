@@ -1,7 +1,8 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.3";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.3";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.3";
+import * as IMG from "./imagens.js?v=2.9.4";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.9.4";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.4";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.4";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -832,6 +833,31 @@ function bestFromForm() {
     extra: bfRows("ex").filter((a) => a[0] || a[1]).map((a) => [a[0] || "Rolagem", a[1] || "1d6"]),
   };
 }
+// Junta NPCs lidos de um arquivo com os do ritual (mesmo ID = atualiza)
+function importarNpcs(lista) {
+  let novos = 0, atual = 0;
+  for (const imp of lista) {
+    const i = imp.id ? state.bestiario.findIndex((x) => x.id === imp.id) : -1;
+    if (i >= 0) {
+      const old = state.bestiario[i]; npcPv(old);
+      const cheio = (at, mx) => at === "" || at === undefined || num(at) >= num(mx);
+      const pvAtual = imp.pvAtual ?? (cheio(old.pvAtual, old.pv) ? imp.pv : Math.min(num(old.pvAtual), num(imp.pv)));
+      const peAtual = imp.peAtual ?? (cheio(old.peAtual, old.pe) ? imp.pe : Math.min(num(old.peAtual), num(imp.pe)));
+      state.bestiario[i] = { ...old, ...imp, id: old.id, pvAtual, peAtual };
+      const mem = npcMember(old.id); if (mem) mem.m.nome = imp.nome;
+      atual++;
+    } else {
+      state.bestiario.push({ ...imp, id: uid(), pvAtual: imp.pvAtual ?? imp.pv, peAtual: imp.peAtual ?? imp.pe }); novos++;
+    }
+  }
+  save(); toast(`Fichas importadas: ${novos} novo(s), ${atual} atualizado(s).`);
+}
+function importarTextos(textos) {
+  const lista = []; let ruins = 0;
+  for (const t of textos) { try { lista.push(...lerArquivoNpcs(t)); } catch { ruins++; } }
+  if (!lista.length) { toast("Não encontrei nenhum NPC. Cada ficha precisa de “=== NPC ===” e “Nome: …”."); return false; }
+  importarNpcs(lista); if (ruins) toast(`${ruins} arquivo(s) não puderam ser lidos.`); return true;
+}
 // Rola uma linha do formulário sem precisar salvar
 function bfRoll(btn, tipo) {
   const row = btn.closest(".bf-row"); const k = Object.fromEntries([...row.querySelectorAll("[data-k]")].map((x) => [x.dataset.k, x.value.trim()]));
@@ -878,7 +904,7 @@ function npcCard(c, ci) {
     ...(c.rewards || []).map((r) => `<span class="tag good">✦ ${esc(r)}</span>`)].filter(Boolean).join(" ");
   return `<details class="card beast custom npc" data-npcbox="${c.id}" ${ui.npcOpen === c.id ? "open" : ""}><summary><b>${esc(c.nome)}</b> <span class="muted">${esc(c.tipo || "NPC")}${tIdx >= 0 ? ` · ${esc(state.equipes[tIdx].nome)}` : " · sem equipe"}</span></summary>
     <div class="row npc-top"><label class="inline">Equipe <select data-npcteam="${c.id}"><option value="-1">— nenhuma —</option>${opt(state.equipes.map((t, i) => [i, t.nome]), tIdx)}</select></label>
-      <span class="grow"></span><button class="ghost icon" data-bestedit="${c.id}">✎ editar</button><button class="ghost icon danger" data-bestdel="${c.id}">✕ apagar</button></div>
+      <span class="grow"></span><button class="ghost icon" data-npcexp="${c.id}" title="Baixar a ficha deste NPC (.txt) para editar e importar de volta">⤓ ficha</button><button class="ghost icon" data-bestedit="${c.id}">✎ editar</button><button class="ghost icon danger" data-bestdel="${c.id}">✕ apagar</button></div>
     <div class="grid2 npc-pv">
       <label>PV <span class="row"><input type="number" data-npc="${c.id}|pvAtual" value="${esc(c.pvAtual)}"> / <input type="number" data-npc="${c.id}|pv" value="${esc(c.pv)}"></span></label>
       <label>PE <span class="row"><input type="number" data-npc="${c.id}|peAtual" value="${esc(c.peAtual)}"> / <input type="number" data-npc="${c.id}|pe" value="${esc(c.pe)}"></span></label>
@@ -1376,8 +1402,16 @@ function tabBestiario() {
     <p class="muted small">${esc(c.attrs)}${c.pp ? `<br>Presença perturbadora: ${esc(c.pp)}` : ""}${c.rd ? `<br>Resistências: ${esc(c.rd)}` : ""}${c.vuln ? ` · Vulnerável: ${esc(c.vuln)}` : ""}</p>
     <div class="rolls"><button data-mon="${ci}|per">Percepção ${esc(c.per)}</button><button data-mon="${ci}|ini">Iniciativa ${esc(c.ini)}</button>${Object.entries(c.res || {}).map(([k, v]) => `<button data-mon="${ci}|res|${k}">${k} ${esc(v)}</button>`).join("")}</div>
     <div class="atks">${c.atq.map((a, ai) => `<button class="primary" data-monatk="${ci}|${ai}">🎲 ${esc(a[0])} <small>${esc(a[1])} · ${esc(a[2])} ${esc(a[3])}</small></button>`).join("")}${(c.extra || []).map((e, ei) => `<button data-monex="${ci}|${ei}">🎲 ${esc(e[0])} <small>${esc(e[1])}</small></button>`).join("")}</div>
-    <ul class="plain small">${(c.hab || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul></details>`; }).join("");
+    <ul class="plain small">${(c.hab || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+    <div class="row"><button class="ghost icon" data-livroexp="${ci}" title="Baixa a ficha; edite e importe para virar um NPC seu">⤓ ficha para editar</button><button class="ghost icon" data-livrocopia="${ci}">＋ copiar para meus NPCs</button></div></details>`; }).join("");
   return `<details class="card" ${ui.bestEdit ? "open" : ""} id="bestNewBox"><summary><b>${edit ? `Editando: ${esc(edit.nome)}` : "＋ Novo NPC"}</b></summary>${bestForm(edit)}</details>
+  <section class="card npc-io"><h3>Fichas em arquivo</h3>
+    <p class="muted small">Baixe as fichas (.txt), edite no Bloco de Notas e importe de volta: NPCs com o mesmo ID são atualizados (PV atuais, condições e equipe continuam), os outros entram como novos. Aceita também .json.</p>
+    <div class="row wrap"><button class="primary" id="btnNpcImp">⤒ Importar fichas</button><button id="btnNpcExpAll" ${state.bestiario.length ? "" : "disabled"}>⤓ Exportar todos</button><button class="ghost" id="btnNpcModelo">Baixar modelo em branco</button>
+      <input type="file" id="npcArq" accept=".txt,.json,text/plain,application/json" multiple hidden></div>
+    <details class="small"><summary class="muted">ou colar o texto da ficha</summary>
+      <textarea id="npcCola" rows="6" placeholder="=== NPC ===&#10;Nome: …"></textarea><button id="btnNpcCola">Importar texto colado</button></details>
+  </section>
   <div class="section-title">NPCs (${state.bestiario.length})</div>
   <p class="muted">Ligue cada NPC a uma equipe pelo seletor “Equipe” (ou pela aba Equipes). Testes, desertores, sino, consumo e recompensas usam os dados daqui.</p>
   ${npcs || `<section class="card"><p class="muted">Nenhum NPC ainda.</p></section>`}
@@ -1609,6 +1643,20 @@ function onClick(e) {
     const k = state.melhorias[d.meldel].k; state.melhorias.splice(Number(d.meldel), 1); for (const t of state.equipes) t.base = t.base.filter((x) => x !== k); save(); return;
   }
   if (d.revelar) { revelarMorte(d.revelar); return; }
+  if (d.npcexp) { const c = npcGet(d.npcexp); if (c) downloadFile(nomeArquivo(c.nome), npcsParaArquivo([c]), "text/plain;charset=utf-8"); return; }
+  if (d.livroexp !== undefined) { const c = BESTIARIO[Number(d.livroexp)]; if (c) downloadFile(nomeArquivo(c.nome), npcsParaArquivo([{ ...c, id: "", custom: false }]), "text/plain;charset=utf-8"); return; }
+  if (d.livrocopia !== undefined) {
+    const c = BESTIARIO[Number(d.livrocopia)]; if (!c) return;
+    const [imp] = lerArquivoNpcs(npcsParaArquivo([{ ...c, id: "", custom: false }])); importarNpcs([imp]); return;
+  }
+  if (b.id === "btnNpcExpAll") { downloadFile("npcs-hexatombe.txt", npcsParaArquivo(state.bestiario), "text/plain;charset=utf-8"); return; }
+  if (b.id === "btnNpcModelo") { downloadFile("npc-modelo.txt", modeloNpc(), "text/plain;charset=utf-8"); return; }
+  if (b.id === "btnNpcCola") { const t = document.getElementById("npcCola"); if (importarTextos([t.value])) t.value = ""; return; }
+  if (b.id === "btnNpcImp") {
+    const f = document.getElementById("npcArq");
+    f.onchange = async () => { const files = [...f.files]; f.value = ""; if (!files.length) return; beginAction("Importar fichas"); importarTextos(await Promise.all(files.map((x) => x.text()))); endAction(); };
+    f.click(); return;
+  }
   if (d.bfadd) {
     const box = document.getElementById(`bf-${d.bfadd}-list`); if (!box) return;
     ui.bfDirty = true; box.insertAdjacentHTML("beforeend", { atq: bfAtqRow, ex: bfExRow, per: bfPerRow, hab: bfHabRow }[d.bfadd]());
@@ -1802,7 +1850,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.3", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.4", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -1981,7 +2029,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.9.3", location.href).href;
+  const url = new URL("quadro.html?v=2.9.4", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
