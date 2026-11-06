@@ -1,7 +1,7 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.2";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.2";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.2";
+import * as IMG from "./imagens.js?v=2.9.3";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.3";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.3";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -172,7 +172,7 @@ function defaultState() {
   return {
     v: 1, dia: 1, fase: 0, fracassou: false, herdeiro: null, finalFeito: false,
     equipes: Array.from({ length: 6 }, (_, i) => ({ id: uid(), nome: `Equipe ${i + 1}`, cor: CORES[i], membros: [], agua: 0, comida: 0, sucata: 0, base: [], jornada: [] })),
-    sacrificios: [], intencoes: {}, batalha: null, circo: { dardos: [], soco: [], hist: [] }, log: [], areas: [], rel: {}, conhece: {}, melhorias: MELHORIAS.map((m) => ({ ...m })), bestiario: [], rev: 0, mortes: [], diarios: {}, epilogo: null, revela: {}, pistas: [],
+    sacrificios: [], intencoes: {}, batalha: null, circo: { dardos: [], soco: [], hist: [] }, log: [], areas: [], rel: {}, conhece: {}, melhorias: MELHORIAS.map((m) => ({ ...m })), bestiario: [], rev: 0, mortes: [], diarios: {}, epilogo: null, revela: {}, pistas: [], oculto: {},
   };
 }
 let state = defaultState();
@@ -183,7 +183,18 @@ let selTeam = 0;
 const ui = {}; // valores de formulários entre renders
 const isGM = () => role === "GM";
 
-function addEvent(txt) { state.log.unshift({ at: Date.now(), dia: state.dia, txt }); state.log = state.log.slice(0, 30); }
+function addEvent(txt, gm = false) { state.log.unshift({ at: Date.now(), dia: state.dia, txt, ...(gm ? { gm: true } : {}) }); state.log = state.log.slice(0, 40); }
+/* ---------- Mortes anônimas: o que os jogadores recebem ---------- */
+// Cópia do estado sem os segredos do mestre: some o "oculto", os eventos só do mestre,
+// e quem morreu anonimamente continua aparecendo vivo para os jogadores.
+function estadoPublico() {
+  const s = JSON.parse(JSON.stringify(state));
+  delete s.oculto;
+  s.log = (s.log || []).filter((l) => !l.gm);
+  for (const t of s.equipes || []) for (const m of t.membros || []) if (m.mortoAnon) { m.vivo = true; delete m.mortoAnon; }
+  return s;
+}
+function segredo(id) { return (id && state.oculto?.[id]) || null; }
 let saveTimer;
 function save(quiet = false) {
   if (!quiet) render();
@@ -194,9 +205,9 @@ function save(quiet = false) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     if (!obrOk) return;
-    const json = JSON.stringify(state);
-    // cópia de segurança na sala, só se couber no limite de 16 KB
-    try { await OBR.room.setMetadata({ [STATE_KEY]: json.length < 12000 ? state : { rev: state.rev, grande: true } }); } catch { /* sem espaço: as mensagens e o navegador do mestre seguram o estado */ }
+    const pub = estadoPublico(); const json = JSON.stringify(pub);
+    // cópia de segurança na sala (sem segredos do mestre), só se couber no limite de 16 KB
+    try { await OBR.room.setMetadata({ [STATE_KEY]: json.length < 12000 ? pub : { rev: state.rev, grande: true } }); } catch { /* sem espaço: as mensagens e o navegador do mestre seguram o estado */ }
   }, 600);
 }
 function allMembers() { return state.equipes.flatMap((t, ti) => t.membros.map((m) => ({ m, t, ti }))); }
@@ -275,11 +286,12 @@ function memberTest(mid, pericia, extra = 0) {
 }
 
 /* ---------- Anúncios / rolagens ---------- */
-function announce(text, local = false, sino = false) {
+// pub: texto alternativo para os jogadores (ex.: morte anônima); o mestre vê o texto completo
+function announce(text, local = false, sino = false, pub = null) {
   rollLog.unshift({ at: Date.now(), text }); rollLog = rollLog.slice(0, 40);
   lsSet(NS + ":log:" + roomId, JSON.stringify(rollLog));
   if (sino) { bell(); redFlash(); document.body.classList.add("sino"); setTimeout(() => document.body.classList.remove("sino"), 5000); }
-  if (obrOk) { OBR.notification.show(text.split("\n")[0]); if (!local) OBR.broadcast.sendMessage(CHANNEL, { text, sino }).catch(() => {}); }
+  if (obrOk) { OBR.notification.show(text.split("\n")[0]); if (!local) OBR.broadcast.sendMessage(CHANNEL, { text: pub || text, sino }).catch(() => {}); }
   else toast(text);
   softRender();
 }
@@ -325,32 +337,60 @@ function badalarSino() {
   }
   return linhas;
 }
-function registrarMorte(vid, kid, diurna) {
+function registrarMorte(vid, kid, diurna, anon = false) {
   const v = findM(vid); if (!v || !v.m.vivo) return;
   const k = kid ? findM(kid) : null;
   v.m.vivo = false;
-  (state.mortes ||= []).push({ dia: state.dia, nome: mName(v.m), equipe: v.t.nome, algoz: k ? mName(k.m) : "", sac: v.m.sac || null });
-  const linhas = [`☠ ${mName(v.m)} (${v.t.nome}) morreu${k ? ` pelas mãos de ${mName(k.m)}` : ""}.`];
-  if (!v.m.sac) { addEvent(linhas[0]); announce(linhas[0]); return save(); }
+  const sid = uid();
+  const real = { nome: mName(v.m), equipe: v.t.nome, algoz: k ? mName(k.m) : "" };
+  if (anon) { v.m.mortoAnon = true; (state.oculto ||= {})[sid] = { ...real, vid: v.m.id }; }
+  (state.mortes ||= []).push(anon ? { id: sid, anon: true, dia: state.dia, nome: "", equipe: "", algoz: "", sac: v.m.sac || null } : { id: sid, dia: state.dia, ...real, sac: v.m.sac || null });
+  const linhas = [`☠ ${real.nome} (${real.equipe}) morreu${k ? ` pelas mãos de ${real.algoz}` : ""}.${anon ? " [anônima]" : ""}`];
+  const pub = []; // o que os jogadores veem quando a morte é anônima
+  if (!v.m.sac) {
+    if (anon) { addEvent(linhas[0], true); addEvent("☠ Alguém morreu."); announce(linhas[0], false, false, "☠ Alguém morreu."); }
+    else { addEvent(linhas[0]); announce(linhas[0]); }
+    return save();
+  }
   const est = v.m.sac;
   const valido = !diurna && sacrificiosHoje().length === 0;
   if (valido) {
-    state.sacrificios.push({ dia: state.dia, estigma: est, vitima: mName(v.m), equipe: v.t.nome, algoz: k ? mName(k.m) : "" });
-    linhas.push(`🔔 O SINO TOCA. Sacrifício ${state.sacrificios.length}/6 realizado (${est}). Nenhum outro sacrifício deve morrer esta noite.`);
-    linhas.push(`Intenção liberada — ${est}: ${EST[est].missao} Recompensa: ${EST[est].rec}`);
+    state.sacrificios.push(anon ? { id: sid, anon: true, dia: state.dia, estigma: est, vitima: "", equipe: "", algoz: "" } : { id: sid, dia: state.dia, estigma: est, vitima: real.nome, equipe: real.equipe, algoz: real.algoz });
+    const sino = `🔔 O SINO TOCA. Sacrifício ${state.sacrificios.length}/6 realizado (${est}). Nenhum outro sacrifício deve morrer esta noite.`;
+    const intencao = `Intenção liberada — ${est}: ${EST[est].missao} Recompensa: ${EST[est].rec}`;
+    linhas.push(sino, intencao);
+    pub.push(`☠ O sacrifício de ${est} morreu.`, sino, intencao);
     const castigo = badalarSino();
     if (castigo.length) linhas.push("Desertores castigados:\n" + castigo.join("\n"));
     for (const x of v.t.membros.map((m) => ({ m, t: v.t })).filter((x) => x.m.vivo && !x.m.sac)) { const i = tornarDesertor(x, "perdeu o sacrifício"); if (i) linhas.push(i); }
-    if (state.dia === 6) linhas.push("Lua de Sangue: veja a aba Ritual para o sacrifício final.");
+    if (state.dia === 6) { linhas.push("Lua de Sangue: veja a aba Ritual para o sacrifício final."); pub.push("Lua de Sangue: o sacrifício final se aproxima."); }
   } else {
-    linhas.push(diurna ? "A morte aconteceu fora da noite: o sacrifício não conta e o estigma passa adiante." : "Já houve um sacrifício esta noite: este não conta e o estigma passa adiante.");
+    const passa = diurna ? "A morte aconteceu fora da noite: o sacrifício não conta e o estigma passa adiante." : "Já houve um sacrifício esta noite: este não conta e o estigma passa adiante.";
+    linhas.push(passa); pub.push(`☠ O sacrifício de ${est} morreu.`, passa);
     if (k && k.m.vivo && !k.m.sac) { k.m.sac = est; linhas.push(`${mName(k.m)} herda o estigma de ${est} e vira sacrifício.`); }
     else { state.herdeiro = est; linhas.push(`Ninguém pode herdar: a Coroa escolhe um novo sacrifício digno (${est}). Mestre: escolha na aba Ritual.`); }
     for (const x of v.t.membros.map((m) => ({ m, t: v.t })).filter((x) => x.m.vivo && !x.m.sac)) { const i = tornarDesertor(x, "perdeu o sacrifício"); if (i) linhas.push(i); }
   }
-  for (const l of linhas) addEvent(l.split("\n")[0]);
-  announce(linhas.join("\n"), false, valido);
+  if (anon) {
+    for (const l of linhas) addEvent(l.split("\n")[0], true);
+    for (const l of pub) addEvent(l);
+    announce(linhas.join("\n"), false, valido, pub.join("\n"));
+  } else {
+    for (const l of linhas) addEvent(l.split("\n")[0]);
+    announce(linhas.join("\n"), false, valido);
+  }
   save();
+}
+// Revela uma morte que estava anônima (vai para os jogadores a partir daqui)
+function revelarMorte(id) {
+  const o = segredo(id); if (!o) return;
+  const mo = (state.mortes || []).find((x) => x.id === id); const sa = state.sacrificios.find((x) => x.id === id);
+  if (mo) { Object.assign(mo, { nome: o.nome, equipe: o.equipe, algoz: o.algoz }); delete mo.anon; }
+  if (sa) { Object.assign(sa, { vitima: o.nome, equipe: o.equipe, algoz: o.algoz }); delete sa.anon; }
+  const x = o.vid && findM(o.vid); if (x) delete x.m.mortoAnon;
+  delete state.oculto[id];
+  const txt = `☠ Revelado: ${sa ? `o sacrifício de ${sa.estigma} era ` : ""}${o.nome} (${o.equipe})${o.algoz ? `, morto por ${o.algoz}` : ""}.`;
+  addEvent(txt); announce(txt); save();
 }
 function avancarFase() {
   if (state.fase < 2) { state.fase++; addEvent(`Dia ${state.dia}: ${FASES[state.fase]}.`); announce(`Hexatombe — dia ${state.dia}: ${FASES[state.fase]}`); return save(); }
@@ -681,7 +721,7 @@ function onSyncChunk(data) {
   for (const [k, v] of Object.entries(syncParts)) if (Date.now() - v.at > 60000) delete syncParts[k];
 }
 let bcastTimer;
-function broadcastState() { clearTimeout(bcastTimer); bcastTimer = setTimeout(() => sendChunks({ kind: "state", state }), 150); }
+function broadcastState() { clearTimeout(bcastTimer); bcastTimer = setTimeout(() => sendChunks({ kind: "state", state: estadoPublico() }), 150); }
 function onSync(obj) {
   if (obj.kind === "hello") { if (isGM()) broadcastState(); return; }
   if (obj.kind === "img") { if (obj.id && /^data:image\//.test(obj.data || "")) IMG.guardar(obj.id, obj.data).then(() => imagensDaTela()); return; }
@@ -742,34 +782,67 @@ function melCusto(m) { return [m.custo ? `${m.custo} sucata` : "", m.req ? `requ
 
 /* ---------- Bestiário com criaturas do mestre ---------- */
 function bestList() { return [...BESTIARIO, ...state.bestiario]; }
+// Linhas editáveis do formulário (sem "uma por linha")
+const bfAtqRow = (a = ["", "", "", ""]) => `<div class="bf-row bf-atq">
+  <input data-k="0" placeholder="Ataque (ex.: Mordida)" value="${esc(a[0] || "")}"><input data-k="1" placeholder="Teste 2d20+5" value="${esc(a[1] || "")}">
+  <input data-k="2" placeholder="Dano 1d6+2" value="${esc(a[2] || "")}"><input data-k="3" placeholder="Tipo (corte)" value="${esc(a[3] || "")}">
+  <button class="icon" data-bfroll="atq" title="Rolar este ataque">🎲</button><button class="icon danger" data-bfdel title="Remover">✕</button></div>`;
+const bfExRow = (a = ["", ""]) => `<div class="bf-row bf-ex">
+  <input data-k="0" placeholder="Nome (ex.: Chicotada)" value="${esc(a[0] || "")}"><input data-k="1" placeholder="Dados 4d8" value="${esc(a[1] || "")}">
+  <button class="icon" data-bfroll="ex" title="Rolar">🎲</button><button class="icon danger" data-bfdel title="Remover">✕</button></div>`;
+const bfPerRow = (a = ["", ""]) => `<div class="bf-row bf-per">
+  <input data-k="0" placeholder="Perícia (ex.: Furtividade)" value="${esc(a[0] || "")}"><input data-k="1" placeholder="Teste 2d20+10" value="${esc(a[1] || "")}">
+  <button class="icon" data-bfroll="per" title="Rolar">🎲</button><button class="icon danger" data-bfdel title="Remover">✕</button></div>`;
+const bfHabRow = (h = { nome: "", desc: "" }) => `<div class="bf-hab">
+  <div class="row"><input data-k="nome" placeholder="Nome da habilidade (opcional)" value="${esc(h.nome || "")}"><button class="icon danger" data-bfdel title="Remover">✕</button></div>
+  <textarea data-k="desc" rows="3" placeholder="O que ela faz — pode ter quantas linhas quiser">${esc(h.desc || "")}</textarea></div>`;
+function npcHabs(c) { return Array.isArray(c.habs) ? c.habs : (c.hab || []).map((h) => ({ nome: "", desc: h })); }
 function bestForm(c) {
-  c ||= { nome: "", tipo: "", vd: "", def: "", pv: "", maq: "", desl: "", attrs: "", per: "1d20", ini: "1d20", res: { Fortitude: "1d20", Reflexos: "1d20", Vontade: "1d20" }, pp: "", rd: "", vuln: "", hab: [], atq: [], extra: [] };
+  c ||= { nome: "", tipo: "", vd: "", def: "", pv: "", maq: "", desl: "", attrs: "", per: "1d20", ini: "1d20", res: { Fortitude: "1d20", Reflexos: "1d20", Vontade: "1d20" }, pp: "", rd: "", vuln: "", hab: [], atq: [], extra: [], lore: "" };
   const f = (id, label, v, extra = "") => `<label>${label} <input id="bf-${id}" value="${esc(v ?? "")}" ${extra}></label>`;
+  const lista = (id, titulo, rows, addTxt) => `<div class="bf-list"><div class="row"><b>${titulo}</b><span class="grow"></span><button class="ghost icon" data-bfadd="${id}">＋ ${addTxt}</button></div><div id="bf-${id}-list">${rows}</div></div>`;
   return `<div class="bestform">
     <div class="grid2">${f("nome", "Nome", c.nome)}${f("tipo", "Tipo e tamanho", c.tipo, 'placeholder="Criatura de Sangue Média"')}</div>
     <div class="grid3">${f("vd", "VD / NEX", c.vd)}${f("def", "Defesa", c.def)}${f("pv", "PV máximos", c.pv)}${f("pe", "PE máximos", c.pe)}${f("maq", "Machucado", c.maq)}${f("desl", "Deslocamento", c.desl)}</div>
     ${f("attrs", "Atributos", c.attrs, 'placeholder="AGI 2 · FOR 1 · INT 1 · PRE 3 · VIG 2"')}
-    <label>Perícias (uma por linha: perícia | teste) <textarea id="bf-per" rows="3" placeholder="Furtividade | 2d20+20&#10;Investigação | 1d20+15">${esc((c.pericias || []).map((p) => p.join(" | ")).join("\n"))}</textarea></label>
     <div class="grid3">${f("per", "Percepção", c.per, 'placeholder="2d20+5"')}${f("ini", "Iniciativa", c.ini)}${f("fort", "Fortitude", c.res?.Fortitude)}${f("ref", "Reflexos", c.res?.Reflexos)}${f("von", "Vontade", c.res?.Vontade)}</div>
     <div class="grid3">${f("pp", "Presença perturbadora", c.pp, 'placeholder="DT 20 · 3d8 mental"')}${f("rd", "Resistências", c.rd)}${f("vuln", "Vulnerabilidades", c.vuln)}</div>
-    <label>Ataques (um por linha: nome | teste | dano | tipo) <textarea id="bf-atq" rows="3" placeholder="Mordida | 2d20+5 | 1d6+2 | corte">${esc((c.atq || []).map((a) => a.join(" | ")).join("\n"))}</textarea></label>
-    <label>Outras rolagens (nome | dados) <textarea id="bf-extra" rows="2" placeholder="Chicotada | 4d8">${esc((c.extra || []).map((a) => a.join(" | ")).join("\n"))}</textarea></label>
-    <label>Habilidades (uma por linha) <textarea id="bf-hab" rows="4">${esc((c.hab || []).join("\n"))}</textarea></label>
+    ${lista("atq", "⚔ Ataques", (c.atq || []).map(bfAtqRow).join("") || bfAtqRow(), "ataque")}
+    ${lista("ex", "🎲 Outras rolagens", (c.extra || []).map(bfExRow).join(""), "rolagem")}
+    ${lista("per", "Perícias", (c.pericias || []).map(bfPerRow).join(""), "perícia")}
+    ${lista("hab", "✦ Habilidades", npcHabs(c).map(bfHabRow).join(""), "habilidade")}
+    <label>📜 Lore <span class="muted small">(aparece embaixo do NPC)</span><textarea id="bf-lore" rows="6" placeholder="Quem é, de onde veio, o que quer, o que esconde…">${esc(c.lore || "")}</textarea></label>
     <div class="row"><button class="primary" id="btnBestSave">${ui.bestEdit ? "Salvar alterações" : "Adicionar ao bestiário"}</button>${ui.bestEdit ? `<button class="ghost" id="btnBestCancel">Cancelar</button>` : ""}</div>
   </div>`;
 }
+function bfRows(id) {
+  return [...document.querySelectorAll(`#bf-${id}-list > *`)].map((r) => Object.fromEntries([...r.querySelectorAll("[data-k]")].map((x) => [x.dataset.k, x.value.trim()])));
+}
 function bestFromForm() {
   const v = (id) => (document.getElementById("bf-" + id)?.value || "").trim();
-  const lines = (id) => v(id).split("\n").map((l) => l.trim()).filter(Boolean);
   const nome = v("nome"); if (!nome) { toast("Dê um nome à criatura."); return null; }
+  const habs = bfRows("hab").filter((h) => h.nome || h.desc).map((h) => ({ nome: h.nome, desc: h.desc }));
   return {
     id: ui.bestEdit || uid(), custom: true, nome, tipo: v("tipo"), vd: v("vd"), def: v("def"), pv: v("pv"), maq: v("maq"), desl: v("desl"), attrs: v("attrs"),
     per: v("per") || "1d20", ini: v("ini") || "1d20", res: { Fortitude: v("fort") || "1d20", Reflexos: v("ref") || "1d20", Vontade: v("von") || "1d20" },
-    pp: v("pp"), rd: v("rd"), vuln: v("vuln"), hab: lines("hab"), pe: v("pe"),
-    pericias: lines("per").map((l) => { const p = l.split("|").map((x) => x.trim()); return [p[0] || "Perícia", p[1] || "1d20"]; }),
-    atq: lines("atq").map((l) => { const p = l.split("|").map((x) => x.trim()); return [p[0] || "Ataque", p[1] || "1d20", p[2] || "", p[3] || ""]; }),
-    extra: lines("extra").map((l) => { const p = l.split("|").map((x) => x.trim()); return [p[0] || "Rolagem", p[1] || "1d6"]; }),
+    pp: v("pp"), rd: v("rd"), vuln: v("vuln"), pe: v("pe"), lore: (document.getElementById("bf-lore")?.value || "").trim(),
+    habs, hab: habs.map((h) => (h.nome ? `${h.nome}. ${h.desc}` : h.desc).trim()), // "hab" em texto continua para as outras extensões
+    pericias: bfRows("per").filter((p) => p[0] || p[1]).map((p) => [p[0] || "Perícia", p[1] || "1d20"]),
+    atq: bfRows("atq").filter((a) => a[0] || a[1] || a[2]).map((a) => [a[0] || "Ataque", a[1] || "1d20", a[2] || "", a[3] || ""]),
+    extra: bfRows("ex").filter((a) => a[0] || a[1]).map((a) => [a[0] || "Rolagem", a[1] || "1d6"]),
   };
+}
+// Rola uma linha do formulário sem precisar salvar
+function bfRoll(btn, tipo) {
+  const row = btn.closest(".bf-row"); const k = Object.fromEntries([...row.querySelectorAll("[data-k]")].map((x) => [x.dataset.k, x.value.trim()]));
+  const quem = (document.getElementById("bf-nome")?.value || "").trim() || "NPC";
+  if (tipo === "atq") {
+    const t = rollMonster(k[1] || "1d20"); const dm = k[2] ? rollExpr(k[2]) : null;
+    announce(`${quem} — ${k[0] || "Ataque"}: ${t.txt}${dm?.ok ? `\nDano: ${dm.total} ${k[3] || ""}  —  ${dm.txt}` : ""}`, true); return;
+  }
+  if (tipo === "per") { const t = rollMonster(k[1] || "1d20"); announce(`${quem} — ${k[0] || "Perícia"}: ${t.txt}`, true); return; }
+  const r = rollExpr(k[1] || "1d6"); if (!r.ok) return toast("Escreva os dados, ex.: 2d6+3.");
+  announce(`${quem} — ${k[0] || "Rolagem"}: ${r.total}  —  ${r.txt}`, true);
 }
 
 /* =========================================================
@@ -819,9 +892,10 @@ function npcCard(c, ci) {
     </div>
     <div class="atks">${(c.atq || []).map((a, ai) => `<button class="primary" data-monatk="${ci}|${ai}">🎲 ${esc(a[0])} <small>${esc(a[1])} · ${esc(a[2])} ${esc(a[3])}</small></button>`).join("")}
       ${(c.extra || []).map((e, ei) => `<button data-monex="${ci}|${ei}">🎲 ${esc(e[0])} <small>${esc(e[1])}</small></button>`).join("")}</div>
-    ${(c.hab || []).length ? `<ul class="plain small">${c.hab.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
+    ${npcHabs(c).length ? `<div class="npc-habs">${npcHabs(c).map((h) => `<div class="npc-hab">${h.nome ? `<b>${esc(h.nome)}.</b> ` : ""}<span>${esc(h.desc)}</span></div>`).join("")}</div>` : ""}
     ${(c.historia || []).length ? `<details class="small"><summary class="muted">História</summary><ul class="plain">${c.historia.map((h) => `<li>${esc(h)}</li>`).join("")}</ul></details>` : ""}
     <textarea data-npc="${c.id}|notas" rows="2" placeholder="Notas do mestre sobre este NPC…">${esc(c.notas || "")}</textarea>
+    <label class="npc-lore">📜 Lore <textarea data-npc="${c.id}|lore" rows="${Math.min(14, Math.max(3, String(c.lore || "").split("\n").length + 1))}" placeholder="Escreva aqui a história deste NPC…">${esc(c.lore || "")}</textarea></label>
   </details>`;
 }
 
@@ -847,19 +921,19 @@ function epilogoHTML(desejos) {
   const vivos = aliveMembers();
   const mortesReg = state.mortes || [];
   const nomesReg = new Set(mortesReg.map((m) => m.nome));
-  const outrosMortos = allMembers().filter((x) => !x.m.vivo && !nomesReg.has(mName(x.m)));
+  const outrosMortos = allMembers().filter((x) => !x.m.vivo && !x.m.mortoAnon && !nomesReg.has(mName(x.m)));
   const des = allMembers().filter((x) => x.m.des);
   const ints = ESTIGMAS.filter((e) => (state.intencoes[e.nome] || []).length);
   const desfecho = state.finalFeito ? "O sacrifício final foi realizado sob a Lua de Sangue." : state.fracassou ? "O Hexatombe fracassou." : `O ritual chegou ao dia ${state.dia} de 6.`;
-  const log = [...state.log].reverse();
+  const log = state.log.filter((l) => !l.gm).reverse();
   return `<div class="epi">
     <p class="epi-lead">${desfecho} ${state.sacrificios.length} de 6 sacrifícios realizados.</p>
     <h4>Sobreviventes (${vivos.length})</h4>
     <ul>${state.equipes.map((t) => { const v = t.membros.filter((m) => m.vivo); return v.length ? `<li><b>${esc(t.nome)}:</b> ${v.map((m) => esc(mName(m)) + (m.sac ? ` ✠${esc(m.sac)}` : "")).join(", ")}</li>` : ""; }).join("") || "<li>Ninguém.</li>"}</ul>
     <h4>Sacrifícios</h4>
-    <ol>${state.sacrificios.map((s) => `<li><b>${esc(s.estigma)}</b> — ${esc(s.vitima)} (${esc(s.equipe)}), dia ${s.dia}${s.algoz ? `, pelas mãos de ${esc(s.algoz)}` : ""}</li>`).join("") || "<li>Nenhum.</li>"}</ol>
+    <ol>${state.sacrificios.map((s) => s.anon ? `<li><b>${esc(s.estigma)}</b> — identidade oculta, dia ${s.dia}</li>` : `<li><b>${esc(s.estigma)}</b> — ${esc(s.vitima)} (${esc(s.equipe)}), dia ${s.dia}${s.algoz ? `, pelas mãos de ${esc(s.algoz)}` : ""}</li>`).join("") || "<li>Nenhum.</li>"}</ol>
     <h4>Mortos</h4>
-    <ul>${mortesReg.map((m) => `<li>${esc(m.nome)} (${esc(m.equipe)}) — dia ${m.dia}${m.algoz ? `, por ${esc(m.algoz)}` : ""}${m.sac ? ` · sacrifício de ${esc(m.sac)}` : ""}</li>`).join("")}${outrosMortos.map((x) => `<li>${esc(mName(x.m))} (${esc(x.t.nome)})</li>`).join("")}${!mortesReg.length && !outrosMortos.length ? "<li>Ninguém.</li>" : ""}</ul>
+    <ul>${mortesReg.map((m) => m.anon ? `<li>Alguém — dia ${m.dia}${m.sac ? ` · sacrifício de ${esc(m.sac)}` : ""}</li>` : `<li>${esc(m.nome)} (${esc(m.equipe)}) — dia ${m.dia}${m.algoz ? `, por ${esc(m.algoz)}` : ""}${m.sac ? ` · sacrifício de ${esc(m.sac)}` : ""}</li>`).join("")}${outrosMortos.map((x) => `<li>${esc(mName(x.m))} (${esc(x.t.nome)})</li>`).join("")}${!mortesReg.length && !outrosMortos.length ? "<li>Ninguém.</li>" : ""}</ul>
     <h4>Intenções cumpridas</h4>
     <ul>${ints.map((e) => `<li><b>${esc(e.nome)}:</b> ${(state.intencoes[e.nome] || []).map((id) => findM(id)).filter(Boolean).map((x) => esc(mName(x.m))).join(", ")}</li>`).join("") || "<li>Nenhuma.</li>"}</ul>
     ${des.length ? `<h4>Desertores</h4><p>${des.map((x) => esc(mName(x.m)) + (x.m.vivo ? "" : " ☠")).join(", ")}</p>` : ""}
@@ -961,6 +1035,21 @@ function memberOptions(filter = () => true, sel = "", empty = "") {
 const opt = (list, sel) => list.map((v) => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return `<option value="${esc(val)}" ${String(val) === String(sel) ? "selected" : ""}>${esc(lab)}</option>`; }).join("");
 const fmtT = (t) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+function logVisivel() { return isGM() ? state.log : state.log.filter((l) => !l.gm); }
+function sacItem(s) {
+  if (s.anon) {
+    const o = isGM() && segredo(s.id);
+    return `<li><span class="est">${esc(s.estigma)}</span> Dia ${s.dia} — <i>identidade oculta</i>${o ? ` <span class="muted">🔒 ${esc(o.nome)} (${esc(o.equipe)}${o.algoz ? `, por ${esc(o.algoz)}` : ""})</span> <button class="ghost icon" data-revelar="${s.id}" title="Contar aos jogadores quem morreu e quem matou">Revelar</button>` : ""}</li>`;
+  }
+  return `<li><span class="est">${esc(s.estigma)}</span> Dia ${s.dia} — ${esc(s.vitima)} <span class="muted">(${esc(s.equipe)}${s.algoz ? `, por ${esc(s.algoz)}` : ""})</span></li>`;
+}
+// Mortes anônimas que não foram sacrifício (só o mestre vê)
+function mortesAnonCard() {
+  const sids = new Set(state.sacrificios.map((s) => s.id));
+  const ms = (state.mortes || []).filter((m) => m.anon && !sids.has(m.id) && segredo(m.id));
+  if (!ms.length) return "";
+  return `<h4 class="muted small">🕶 Outras mortes anônimas</h4><ul class="plain small">${ms.map((m) => { const o = segredo(m.id); return `<li>Dia ${m.dia} — ${esc(o.nome)} (${esc(o.equipe)})${o.algoz ? `, por ${esc(o.algoz)}` : ""}${m.sac ? ` · ✠ ${esc(m.sac)}` : ""} <button class="ghost icon" data-revelar="${m.id}">Revelar</button></li>`; }).join("")}</ul>`;
+}
 function tabRitual() {
   const vivos = aliveMembers(); const des = vivos.filter((x) => x.m.des).length;
   const hoje = sacrificiosHoje().length;
@@ -995,17 +1084,19 @@ function tabRitual() {
       <label>Quem matou <select id="dKil">${memberOptions((m) => m.vivo, ui.dKil, "Ninguém / acidente")}</select></label>
     </div>
     <label class="check"><input type="checkbox" id="dDia"> Foi durante o dia (fora da lua)</label>
+    <label class="check"><input type="checkbox" id="dAnon" ${ui.dAnon ? "checked" : ""}> 🕶 Morte anônima — os jogadores não veem quem morreu nem quem matou (se for sacrifício, veem o sino e o estigma)</label>
     <button class="danger-btn" id="btnMorte">☠ Registrar morte</button>
     <p class="muted">Se for sacrifício, o sino toca sozinho: castiga os desertores, transforma a equipe da vítima em desertora e libera a intenção do estigma. Um segundo sacrifício na mesma noite passa o estigma para quem matou.</p>
   </section>` : ""}
 
   ${npcSimCard()}
   <section class="card"><h3>Sacrifícios</h3>
-    ${state.sacrificios.length ? `<ol class="sacs">${state.sacrificios.map((s) => `<li><span class="est">${esc(s.estigma)}</span> Dia ${s.dia} — ${esc(s.vitima)} <span class="muted">(${esc(s.equipe)}${s.algoz ? `, por ${esc(s.algoz)}` : ""})</span></li>`).join("")}</ol>` : `<p class="muted">Nenhum ainda.</p>`}
+    ${state.sacrificios.length ? `<ol class="sacs">${state.sacrificios.map((s) => sacItem(s)).join("")}</ol>` : `<p class="muted">Nenhum ainda.</p>`}
+    ${isGM() ? mortesAnonCard() : ""}
   </section>
 
   <section class="card"><h3>Acontecimentos</h3>
-    ${state.log.length ? `<ul class="log">${state.log.map((l) => `<li><span class="t">D${l.dia}</span><pre>${esc(l.txt)}</pre></li>`).join("")}</ul>` : `<p class="muted">Nada ainda.</p>`}
+    ${logVisivel().length ? `<ul class="log">${logVisivel().map((l) => `<li class="${l.gm ? "gmonly" : ""}"><span class="t">D${l.dia}</span><pre>${l.gm ? "🔒 " : ""}${esc(l.txt)}</pre></li>`).join("")}</ul>` : `<p class="muted">Nada ainda.</p>`}
   </section>
   <section class="card"><h3>Rolagens recentes</h3>
     ${rollLog.length ? `<ul class="log">${rollLog.map((l) => `<li><span class="t">${fmtT(l.at)}</span><pre>${esc(l.text)}</pre></li>`).join("")}</ul>` : `<p class="muted">Nenhuma.</p>`}
@@ -1297,7 +1388,7 @@ function tabBestiario() {
 const TABS = [["ritual", "Ritual"], ["arena", "Arena"], ["equipes", "Equipes"], ["intencoes", "Intenções"], ["base", "Recursos e base"], ["explorar", "Exploração"], ["extras", "Extras"], ["bestiario", "NPCs"], ["arquivo", "Arquivo"], ["epilogo", "Epílogo"]];
 let renderPending = false;
 function render() {
-  renderPending = false;
+  renderPending = false; ui.bfDirty = false;
   selTeam = clamp(selTeam, 0, state.equipes.length - 1);
   const y = window.scrollY;
   const tabsOk = isGM() ? TABS : TABS.filter(([k]) => ["ritual", "arena", "equipes", "intencoes", "base", "arquivo"].includes(k));
@@ -1316,9 +1407,11 @@ function render() {
 function softRender() {
   const a = document.activeElement;
   if (a && app.contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) { renderPending = true; return; }
+  if (ui.bfDirty && document.querySelector(".bestform")) { renderPending = true; return; } // não apaga o NPC que está sendo criado
   render();
 }
 app.addEventListener("focusout", () => { if (renderPending) setTimeout(() => renderPending && softRender(), 60); });
+app.addEventListener("input", (e) => { if (e.target.closest?.(".bestform")) ui.bfDirty = true; }, true);
 
 /* ---------- Eventos ---------- */
 const val = (id) => document.getElementById(id)?.value ?? "";
@@ -1348,7 +1441,7 @@ function onChange(e) {
     if (to >= 0) state.equipes[to].membros.push(m || { id: uid(), nome: c.nome, npcId: c.id, sheetId: null, vivo: true, sac: null, des: !!c.des });
     ui.npcOpen = d.npcteam; save(); return;
   }
-  if (d.npc) { const [id, f] = d.npc.split("|"); const c = npcGet(id); if (!c) return; c[f] = f === "notas" ? el.value : (el.value === "" ? "" : num(el.value)); ui.npcOpen = id; save(true); return; }
+  if (d.npc) { const [id, f] = d.npc.split("|"); const c = npcGet(id); if (!c) return; c[f] = (f === "notas" || f === "lore") ? el.value : (el.value === "" ? "" : num(el.value)); ui.npcOpen = id; save(true); return; }
   if (el.id === "epiDes") { ui.epiDesejos = el.checked; render(); return; }
   if (el.id === "viewTeam") { ui.viewTeam = Number(el.value); render(); return; }
   if (d.know) {
@@ -1446,7 +1539,7 @@ function onClick(e) {
   if (b.id === "btnMorte") {
     const v = val("dVit"); if (!v) return toast("Escolha quem morreu.");
     const k = val("dKil") || null; if (k === v) return toast("A vítima não pode ser o algoz.");
-    ui.dVit = ui.dKil = ""; registrarMorte(v, k, document.getElementById("dDia").checked); return;
+    ui.dVit = ui.dKil = ""; ui.dAnon = document.getElementById("dAnon").checked; registrarMorte(v, k, document.getElementById("dDia").checked, ui.dAnon); return;
   }
   if (b.id === "btnReset") {
     if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Tem certeza? Clique de novo para zerar"; return; }
@@ -1515,6 +1608,14 @@ function onClick(e) {
     if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "?"; setTimeout(() => b.isConnected && (b.classList.remove("confirm"), b.textContent = "✕"), 2500); return; }
     const k = state.melhorias[d.meldel].k; state.melhorias.splice(Number(d.meldel), 1); for (const t of state.equipes) t.base = t.base.filter((x) => x !== k); save(); return;
   }
+  if (d.revelar) { revelarMorte(d.revelar); return; }
+  if (d.bfadd) {
+    const box = document.getElementById(`bf-${d.bfadd}-list`); if (!box) return;
+    ui.bfDirty = true; box.insertAdjacentHTML("beforeend", { atq: bfAtqRow, ex: bfExRow, per: bfPerRow, hab: bfHabRow }[d.bfadd]());
+    box.lastElementChild.querySelector("input,textarea")?.focus(); return;
+  }
+  if (d.bfdel !== undefined) { b.closest(".bf-row, .bf-hab")?.remove(); return; }
+  if (d.bfroll) { bfRoll(b, d.bfroll); return; }
   if (b.id === "btnBestSave") {
     const c = bestFromForm(); if (!c) return;
     const i = state.bestiario.findIndex((x) => x.id === c.id);
@@ -1524,10 +1625,10 @@ function onClick(e) {
       state.bestiario[i] = { ...old, ...c, pvAtual: cheio(old.pvAtual, old.pv) ? c.pv : Math.min(num(old.pvAtual), num(c.pv)), peAtual: cheio(old.peAtual, old.pe) ? c.pe : Math.min(num(old.peAtual), num(c.pe)) };
     }
     else state.bestiario.push({ ...c, pvAtual: c.pv, peAtual: c.pe });
-    ui.bestEdit = null; save(); toast(`${c.nome} salva no bestiário.`); return;
+    ui.bestEdit = null; ui.bfDirty = false; save(); toast(`${c.nome} salva no bestiário.`); return;
   }
-  if (b.id === "btnBestCancel") { ui.bestEdit = null; render(); return; }
-  if (d.bestedit) { ui.bestEdit = d.bestedit; render(); window.scrollTo(0, 0); return; }
+  if (b.id === "btnBestCancel") { ui.bestEdit = null; ui.bfDirty = false; render(); return; }
+  if (d.bestedit) { ui.bestEdit = d.bestedit; ui.bfDirty = false; render(); window.scrollTo(0, 0); return; }
   if (d.bestdel) {
     if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Apagar mesmo?"; return; }
     for (const t of state.equipes) t.membros = t.membros.filter((m) => m.npcId !== d.bestdel || !m.vivo);
@@ -1656,7 +1757,7 @@ function normalize(s) {
   const out = { ...d, ...s, circo: { ...d.circo, ...(s.circo || {}) } };
   out.melhorias = Array.isArray(s.melhorias) && s.melhorias.length ? s.melhorias : d.melhorias;
   migrarRevela(s);
-  out.bestiario = s.bestiario || []; out.revela = s.revela || {}; out.revelaV = s.revelaV || 2; out.pistas = s.pistas || []; out.conhece = s.conhece || {}; out.mortes = s.mortes || []; out.diarios = s.diarios || {};
+  out.bestiario = s.bestiario || []; out.revela = s.revela || {}; out.revelaV = s.revelaV || 2; out.pistas = s.pistas || []; out.conhece = s.conhece || {}; out.mortes = s.mortes || []; out.diarios = s.diarios || {}; out.oculto = s.oculto || {};
   out.areas = (s.areas || []).map((a) => ({ exp: [], buscas: [], fecha: 0, notas: "", ...a })); out.rel = s.rel || {};
   out.equipes = (s.equipes || d.equipes).map((t, i) => ({ ...d.equipes[i % 6], ...t, membros: t.membros || [], base: t.base || [], jornada: t.jornada || [] }));
   return out;
@@ -1701,7 +1802,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.2", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.3", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -1880,7 +1981,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.9.2", location.href).href;
+  const url = new URL("quadro.html?v=2.9.3", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2110,7 +2211,7 @@ async function start() {
       loadLocal();
       let local = null; try { local = JSON.parse(lsGet(lsState()) || "null"); } catch { /* */ }
       let sala = null; try { sala = (await OBR.room.getMetadata())[STATE_KEY]; } catch { /* */ }
-      const best = [local, sala].filter((x) => x && x.equipes).sort((a, b) => num(b.rev) - num(a.rev))[0];
+      const best = (role === "GM" && local?.equipes) ? local : [local, sala].filter((x) => x && x.equipes).sort((a, b) => num(b.rev) - num(a.rev))[0];
       state = normalize(best);
       render();
       OBR.broadcast.onMessage(SYNC, (ev) => onSyncChunk(ev.data));

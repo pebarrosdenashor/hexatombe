@@ -404,3 +404,23 @@ img.carregando { min-height: 60px; min-width: 90px; background: repeating-linear
 .bctl input[data-rrumor], .bctl input[data-rnota] { margin-top: 4px; }
 .quadro-chamada { background: radial-gradient(ellipse at 50% 0%, rgba(168, 116, 73, .35), transparent 70%), var(--panel); border-color: #6b4426; }
 @media (prefers-reduced-motion: reduce) { .revela.novo, .revela.novo .bfoto .bimg { animation: none; } }
+
+/* ---------- Formulário de NPC: listas editáveis, habilidades e lore ---------- */
+.bf-list { border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 6px 8px; background: rgba(0,0,0,.15); }
+.bf-list > .row b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.bf-row { display: grid; gap: 4px; margin-top: 6px; align-items: center; }
+.bf-row input { min-width: 0; width: 100%; box-sizing: border-box; }
+.bf-row button { padding: 4px 8px; }
+.bf-atq { grid-template-columns: 1fr 1fr 1fr auto auto; grid-template-areas: "n n n r d" "t a y y y"; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.bf-atq [data-k="0"] { grid-area: n; } .bf-atq [data-k="1"] { grid-area: t; } .bf-atq [data-k="2"] { grid-area: a; } .bf-atq [data-k="3"] { grid-area: y; }
+.bf-atq [data-bfroll] { grid-area: r; } .bf-atq [data-bfdel] { grid-area: d; }
+.bf-ex, .bf-per { grid-template-columns: 1.6fr 1fr auto auto; }
+.bf-hab { margin-top: 6px; padding: 6px; border-left: 2px solid #b3001b; background: rgba(255,255,255,.03); border-radius: 4px; }
+.bf-hab .row input { flex: 1; min-width: 0; }
+.bf-hab textarea { width: 100%; box-sizing: border-box; margin-top: 4px; font-family: var(--f-body); }
+.npc-habs { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; font-size: 12px; }
+.npc-hab { white-space: pre-wrap; line-height: 1.35; }
+.npc-hab b { color: #ffd36b; }
+.npc-lore { display: block; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,.12); }
+.npc-lore textarea { width: 100%; font-family: var(--f-body); font-style: italic; line-height: 1.45; }
+.log li.gmonly pre { opacity: .7; }
