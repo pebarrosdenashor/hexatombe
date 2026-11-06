@@ -129,3 +129,8 @@ Arquivos novos: `bestiario.js`, `quadro.html`, `quadro.js`, `quadro.css` e `quad
   - use os botões − e ＋ no canto de cima; ou
   - clique no cartão e aperte − ou +.
 - O cartão cresce a partir do alfinete, então os barbantes continuam presos no lugar. O tamanho vale para todos na mesa.
+
+## Novidades da versão 2.10
+
+- **Prato do mestre**: os dados que o mestre rola no Hexatombe e no Painel do Mestre caem num prato de dados só dele, com a mesma aparência escolhida na ficha (Dados › Aparência dos dados e do prato). Nada é enviado pela sala: os jogadores nunca veem esse prato.
+- O botão 🎲 no canto de baixo reabre o prato; 🕘 mostra as últimas rolagens do mestre (das três extensões) e 📌 deixa o prato aberto.

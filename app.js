@@ -1,8 +1,9 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.9.4";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.9.4";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.9.4";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.9.4";
+import * as IMG from "./imagens.js?v=2.10.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.10.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.10.0";
+import * as PM from "./prato-mestre.js?v=2.10.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.10.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -138,7 +139,9 @@ const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n) => (n >= 0 ? "+" + n : String(n));
-const die = (f) => 1 + Math.floor(Math.random() * f);
+const dieRaw = (f) => 1 + Math.floor(Math.random() * f);
+// Todo dado passa pelo prato do mestre (só aparece para o mestre, no navegador dele)
+const die = (f) => PM.d(f, dieRaw(f));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } }
@@ -157,8 +160,10 @@ function rollExpr(expr, mult = 1) {
 }
 // Teste de Ordem: Xd20 fica com o maior; 0 ou menos → (2−X)d20 e fica com o menor
 function rollTest(n) {
-  const k = n > 0 ? n : 2 - n; const dice = Array.from({ length: k }, () => die(20));
-  return { dice, pick: n > 0 ? Math.max(...dice) : Math.min(...dice), worst: n <= 0 };
+  const k = n > 0 ? n : 2 - n; const dice = Array.from({ length: k }, () => dieRaw(20));
+  const pick = n > 0 ? Math.max(...dice) : Math.min(...dice);
+  PM.grupo(20, dice, pick, n <= 0);
+  return { dice, pick, worst: n <= 0 };
 }
 // "3d20+10" → teste de criatura
 function rollMonster(expr) {
@@ -183,6 +188,7 @@ let rollLog = [];
 let selTeam = 0;
 const ui = {}; // valores de formulários entre renders
 const isGM = () => role === "GM";
+PM.iniciar({ ativo: isGM, sala: () => roomId, origem: "Hexatombe" });
 
 function addEvent(txt, gm = false) { state.log.unshift({ at: Date.now(), dia: state.dia, txt, ...(gm ? { gm: true } : {}) }); state.log = state.log.slice(0, 40); }
 /* ---------- Mortes anônimas: o que os jogadores recebem ---------- */
@@ -289,6 +295,7 @@ function memberTest(mid, pericia, extra = 0) {
 /* ---------- Anúncios / rolagens ---------- */
 // pub: texto alternativo para os jogadores (ex.: morte anônima); o mestre vê o texto completo
 function announce(text, local = false, sino = false, pub = null) {
+  PM.texto(text);
   rollLog.unshift({ at: Date.now(), text }); rollLog = rollLog.slice(0, 40);
   lsSet(NS + ":log:" + roomId, JSON.stringify(rollLog));
   if (sino) { bell(); redFlash(); document.body.classList.add("sino"); setTimeout(() => document.body.classList.remove("sino"), 5000); }
@@ -537,7 +544,7 @@ function rollSound() {
   } catch { /* */ }
 }
 function diceAnim(dice, pick, worst) {
-  if (!dice?.length || quietDice) return;
+  if (!dice?.length || quietDice || isGM()) return; // o mestre vê os dados no prato do mestre
   document.querySelector(".dice-anim")?.remove();
   const box = document.createElement("div"); box.className = "dice-anim";
   box.innerHTML = dice.slice(0, 8).map(() => `<span class="d20">?</span>`).join("");
@@ -1850,7 +1857,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.9.4", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.10.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2029,7 +2036,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.9.4", location.href).href;
+  const url = new URL("quadro.html?v=2.10.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2256,6 +2263,7 @@ async function start() {
     OBR.onReady(async () => {
       obrOk = true; roomId = OBR.room.id;
       [role, me.id, me.name] = await Promise.all([OBR.player.getRole(), OBR.player.getId(), OBR.player.getName()]);
+      PM.atualizar();
       loadLocal();
       let local = null; try { local = JSON.parse(lsGet(lsState()) || "null"); } catch { /* */ }
       let sala = null; try { sala = (await OBR.room.getMetadata())[STATE_KEY]; } catch { /* */ }
@@ -2273,12 +2281,13 @@ async function start() {
         OBR.notification.show(text.split("\n")[0]);
         rollLog.unshift({ at: Date.now(), text }); rollLog = rollLog.slice(0, 40); lsSet(NS + ":log:" + roomId, JSON.stringify(rollLog)); softRender();
       });
-      OBR.player.onChange((p) => { if (p.role !== role) { role = p.role; render(); } });
+      OBR.player.onChange((p) => { if (p.role !== role) { role = p.role; PM.atualizar(); render(); } });
       sceneOk = await OBR.scene.isReady(); OBR.scene.onReadyChange((r) => { sceneOk = r; });
       if (isGM()) { fillOwners(); if (!lsGet(lsState())) lsSet(lsState(), JSON.stringify(state)); receberEquipe(); broadcastState(); } else sendChunks({ kind: "hello" });
     });
   } else {
     if (new URLSearchParams(location.search).has("gm")) role = "GM";
+    PM.atualizar();
     me = { id: "local", name: "Teste" }; loadLocal();
     try { state = normalize(JSON.parse(lsGet(lsState()) || "null")); } catch { /* */ }
     render();
