@@ -1,9 +1,9 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.11.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.11.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.11.0";
-import * as PM from "./prato-mestre.js?v=2.11.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.11.0";
+import * as IMG from "./imagens.js?v=2.11.1";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.11.1";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.11.1";
+import * as PM from "./prato-mestre.js?v=2.11.1";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.11.1";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -355,6 +355,7 @@ function registrarMorte(vid, kid, diurna, anon = false) {
   (state.mortes ||= []).push(anon ? { id: sid, anon: true, dia: state.dia, nome: "", equipe: "", algoz: "", sac: v.m.sac || null } : { id: sid, dia: state.dia, ...real, sac: v.m.sac || null });
   const linhas = [`☠ ${real.nome} (${real.equipe}) morreu${k ? ` pelas mãos de ${real.algoz}` : ""}.${anon ? " [anônima]" : ""}`];
   const pub = []; // o que os jogadores veem quando a morte é anônima
+  const segredoL = new Set(); // índices de linhas que revelam quem é sacrifício (só o mestre vê)
   if (!v.m.sac) {
     if (anon) { addEvent(linhas[0], true); addEvent("☠ Alguém morreu."); announce(linhas[0], false, false, "☠ Alguém morreu."); }
     else { addEvent(linhas[0]); announce(linhas[0]); }
@@ -375,8 +376,9 @@ function registrarMorte(vid, kid, diurna, anon = false) {
   } else {
     const passa = diurna ? "A morte aconteceu fora da noite: o sacrifício não conta e o estigma passa adiante." : "Já houve um sacrifício esta noite: este não conta e o estigma passa adiante.";
     linhas.push(passa); pub.push(`☠ O sacrifício de ${est} morreu.`, passa);
-    if (k && k.m.vivo && !k.m.sac) { k.m.sac = est; linhas.push(`${mName(k.m)} herda o estigma de ${est} e vira sacrifício.`); }
-    else { state.herdeiro = est; linhas.push(`Ninguém pode herdar: a Coroa escolhe um novo sacrifício digno (${est}). Mestre: escolha na aba Ritual.`); }
+    if (k && k.m.vivo && !k.m.sac) { k.m.sac = est; segredoL.add(linhas.push(`${mName(k.m)} herda o estigma de ${est} e vira sacrifício.`) - 1); }
+    else { state.herdeiro = est; segredoL.add(linhas.push(`Ninguém pode herdar: a Coroa escolhe um novo sacrifício digno (${est}). Mestre: escolha na aba Ritual.`) - 1); }
+    pub.push(`O estigma de ${est} passou a outra pessoa — ninguém sabe a quem.`);
     for (const x of v.t.membros.map((m) => ({ m, t: v.t })).filter((x) => x.m.vivo && !x.m.sac)) { const i = tornarDesertor(x, "perdeu o sacrifício"); if (i) linhas.push(i); }
   }
   if (anon) {
@@ -384,8 +386,10 @@ function registrarMorte(vid, kid, diurna, anon = false) {
     for (const l of pub) addEvent(l);
     announce(linhas.join("\n"), false, valido, pub.join("\n"));
   } else {
-    for (const l of linhas) addEvent(l.split("\n")[0]);
-    announce(linhas.join("\n"), false, valido);
+    linhas.forEach((l, i) => addEvent(l.split("\n")[0], segredoL.has(i)));
+    if (segredoL.size) for (const l of pub.slice(-1)) addEvent(l);
+    const pubTxt = segredoL.size ? linhas.filter((_, i) => !segredoL.has(i)).concat(pub.slice(-1)).join("\n") : null;
+    announce(linhas.join("\n"), false, valido, pubTxt);
   }
   save();
 }
@@ -1106,7 +1110,9 @@ function memberOptions(filter = () => true, sel = "", empty = "") {
 const opt = (list, sel) => list.map((v) => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return `<option value="${esc(val)}" ${String(val) === String(sel) ? "selected" : ""}>${esc(lab)}</option>`; }).join("");
 const fmtT = (t) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-function logVisivel() { return isGM() ? state.log : state.log.filter((l) => !l.gm); }
+// Linhas antigas que revelavam quem é sacrifício (gravadas antes de virarem só do mestre)
+const REVELA_SAC = /é o sacrifício \(|deixou de ser sacrifício|e vira sacrifício\.|como novo sacrifício \(|Ninguém pode herdar/;
+function logVisivel() { return isGM() ? state.log : state.log.filter((l) => !l.gm && !REVELA_SAC.test(l.txt)); }
 function sacItem(s) {
   if (s.anon) {
     const o = isGM() && segredo(s.id);
@@ -1498,7 +1504,7 @@ function onChange(e) {
   if (d.team) { const [ti, k] = d.team.split("|"); state.equipes[ti][k] = el.value; save(k === "nome"); return; } // nome: sem redesenhar, para não engolir o próximo clique
   if (d.mem) {
     const [ti, mi, k] = d.mem.split("|"); const m = state.equipes[ti].membros[mi];
-    m[k] = el.value || null; addEvent(`${mName(m)} ${m.sac ? `é o sacrifício (${m.sac})` : "deixou de ser sacrifício"}.`); save(); return;
+    m[k] = el.value || null; addEvent(`${mName(m)} ${m.sac ? `é o sacrifício (${m.sac})` : "deixou de ser sacrifício"}.`, true); save(); return;
   }
   if (d.addsheet) {
     if (!el.value) return; const s = getSheet(el.value);
@@ -1610,7 +1616,7 @@ function onClick(e) {
   if (b.id === "btnEncerrar") return encerrarDiaDialog();
   if (b.id === "btnNpcSim") return npcSimDialog();
   if (b.id === "btnUnfail") { state.fracassou = false; save(); return; }
-  if (b.id === "btnHeir") { const x = findM(val("heirSel")); if (!x) return; x.m.sac = state.herdeiro; const txt = `A Coroa escolhe ${mName(x.m)} como novo sacrifício (${state.herdeiro}).`; state.herdeiro = null; addEvent(txt); announce(txt); save(); return; }
+  if (b.id === "btnHeir") { const x = findM(val("heirSel")); if (!x) return; x.m.sac = state.herdeiro; const txt = `A Coroa escolhe ${mName(x.m)} como novo sacrifício (${state.herdeiro}).`; const pubTxt = `👑 A Coroa escolheu, em segredo, quem carrega o estigma de ${state.herdeiro}.`; state.herdeiro = null; addEvent(txt, true); addEvent(pubTxt); announce(txt, false, false, pubTxt); save(); return; }
   if (b.id === "btnFinal") return sacrificioFinal();
   if (b.id === "btnMorte") {
     const v = val("dVit"); if (!v) return toast("Escolha quem morreu.");
@@ -1892,7 +1898,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.11.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.11.1", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2071,7 +2077,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.11.0", location.href).href;
+  const url = new URL("quadro.html?v=2.11.1", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
