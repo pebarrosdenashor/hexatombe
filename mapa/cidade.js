@@ -7,7 +7,7 @@ export const MURALHA = ["#1d3239", "#272b33", "#30232b", "#3a1b22", "#3c1218", "
 export const ONDA = ["#2f4f58", "#3b4550", "#4a3a44", "#582e36", "#5e2229", "#55161d"];
 export const COTA = [382, 389, 396, 403, 410, 417];
 export const ILHAS = [{ x: 780, y: 135, r: 80, ate: 6 }, { x: 215, y: 145, r: 72, ate: 5 }];
-export const USINA = { x: 890, y: 306, w: 52, h: 48 };
+export const USINA = /* Pedra do Mirante, onde fica o Hotel Bela Vista */ { x: 890, y: 306, w: 52, h: 48 };
 
 export const rElip = (x, y) => Math.hypot((x - 500) / 470, (y - 350) / 320);
 
@@ -95,8 +95,17 @@ const ESTATICO = `
     <circle cx="-34" cy="14" r="7" fill="none" stroke="#c9bfa5" stroke-width="2"/>
   </g>
   <text class="nota" x="746" y="182">caixa d'água · curral</text>
-  <rect x="203" y="132" width="22" height="16" fill="var(--civic)" transform="rotate(-7 214 140)"/>
-  <rect x="896" y="312" width="40" height="36" fill="var(--civic)"/>
+  <g transform="rotate(-7 214 140)">
+    <rect x="193" y="120" width="44" height="38" fill="none" stroke="#9a8f74" stroke-width="2"/>
+    <rect x="197" y="124" width="26" height="9" fill="var(--civic)"/>
+    <rect x="227" y="124" width="7" height="14" fill="var(--civic)"/>
+    <circle cx="203" cy="150" r="3.5" fill="none" stroke="#c9bfa5" stroke-width="1.5"/>
+  </g>
+  <g>
+    <rect x="896" y="312" width="40" height="14" fill="var(--civic)"/>
+    <rect x="896" y="326" width="14" height="22" fill="var(--civic)"/>
+    <rect x="915" y="331" width="18" height="12" fill="#5b7f8a" stroke="#c9bfa5" stroke-width="1"/>
+  </g>
   <g class="grade" transform="translate(500,350) rotate(-7)"></g>
   <rect class="agua" width="1000" height="700" fill="var(--agua)" mask="url(#seco)" opacity=".93"/>
   <g class="costa" fill="none" stroke="#d9cfb4" stroke-width="1.2" opacity="0" filter="url(#recorte)">
@@ -241,7 +250,7 @@ export function montarCidade(svg, publicos) {
   [[1, "Rua do Rosário"], [2, "Av. Coronel Tibúrcio"], [3, "Rua da Matriz"], [4, "Rua Sete de Setembro"], [5, "Rua do Comércio"]].forEach(([j, n]) => {
     const i = [2, 4, 1, 5, 3].find((i) => temBloco(i, j) || temBloco(i, j - 1)); if (i !== undefined) rotulo(N[i][j], N[i + 1][j], n);
   });
-  [[1, "Rua das Almas"], [2, "Rua São Benedito"], [4, "Travessa do Sino"], [5, "Rua Santa Luzia"], [6, "Rua da Usina"]].forEach(([i, n]) => {
+  [[1, "Rua das Almas"], [2, "Rua São Benedito"], [4, "Travessa do Sino"], [5, "Rua Santa Luzia"], [6, "Rua do Mirante"]].forEach(([i, n]) => {
     const j = [3, 1, 4, 0, 2].find((j) => temBloco(i, j) || temBloco(i - 1, j)); if (j !== undefined) rotulo(N[i][j], N[i][j + 1], n);
   });
 

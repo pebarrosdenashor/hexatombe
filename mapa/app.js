@@ -6,7 +6,7 @@
    ========================================================= */
 import OBR, { buildImage } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { montarCidade, alagaPorPosicao, COTA, CSS_MAPA, el } from "./cidade.js";
-import { LOCAIS_PADRAO, EQUIPES, TIPOS, DIAS_MESTRE, DIAS_JOGADOR } from "./locais.js";
+import { LOCAIS_PADRAO, EQUIPES, TIPOS, DIAS_MESTRE, DIAS_JOGADOR, VERSAO_LOCAIS } from "./locais.js";
 
 const NS = "io.github.pebarrosdenashor.hexatombe-mapa";
 const PUB = NS + "/pub";
@@ -37,23 +37,46 @@ function localPadrao(d) {
   return {
     id: d.id || uid(), nome: d.nome || "Novo local", tipo: d.tipo || "explorar", eq: d.eq || "",
     x: d.x ?? 500, y: d.y ?? 350, lx: d.lx, ly: d.ly, anchor: d.anchor,
-    alaga: d.alaga ?? null, txt: d.txt || "", alerta: d.alerta || "", notas: "",
+    alaga: d.alaga ?? null, txt: d.txt || "", alerta: d.alerta || "", notas: d.notas || "",
     din: (d.din || []).map((t) => ({ id: uid(), t, v: false })),
     estado: "oculto", rev: { eq: false, txt: false, alerta: false, alaga: false }, desde: {}
   };
 }
 function novoEstado() {
-  const s = { v: 1, dia: 1, seguir: true, auto: true, locais: LOCAIS_PADRAO.map(localPadrao), log: [] };
-  const forca = s.locais.find((l) => l.id === "forca");
-  if (forca) { revelarTudo(forca, 1, false); }
+  const s = { v: VERSAO_LOCAIS, dia: 1, seguir: true, auto: true, locais: LOCAIS_PADRAO.map(localPadrao), log: [] };
+  const hotel = s.locais.find((l) => l.id === "hotel");
+  if (hotel) { revelarTudo(hotel, 1, false); }
   const igreja = s.locais.find((l) => l.id === "igreja");
   if (igreja) { igreja.estado = "avistado"; igreja.desde.avistado = 1; }
   return s;
 }
 function carregar() {
   const raw = lsGet(lsKey());
-  if (raw) { try { const s = JSON.parse(raw); if (s?.locais) return s; } catch { /* arquivo corrompido */ } }
+  if (raw) { try { const s = JSON.parse(raw); if (s?.locais) return migrar(s); } catch { /* arquivo corrompido */ } }
   return novoEstado();
+}
+
+/* Atualiza um ritual salvo com os textos novos dos locais padrão.
+   Mantém o que o mestre já liberou (estado, dias, posição) e as notas que ele escreveu. */
+function migrar(s) {
+  if ((s.v || 1) >= VERSAO_LOCAIS) return s;
+  const forca = s.locais.find((l) => l.id === "forca");
+  if (forca) forca.id = "hotel";
+  for (const d of LOCAIS_PADRAO) {
+    const l = s.locais.find((z) => z.id === d.id);
+    if (!l) continue;
+    const tudoVisto = l.din.length > 0 && l.din.every((x) => x.v);
+    const novo = localPadrao(d);
+    Object.assign(l, { nome: novo.nome, tipo: novo.tipo, eq: novo.eq, txt: novo.txt, alerta: novo.alerta, alaga: novo.alaga });
+    l.din = novo.din.map((x) => ({ ...x, v: l.estado === "explorado" && tudoVisto }));
+    const antigas = (l.notas || "").trim();
+    l.notas = antigas ? novo.notas + "\n\n— Suas notas anteriores —\n" + antigas : novo.notas;
+    if (d.id === "hotel") revelarTudo(l, l.desde?.explorado || 1, false);
+  }
+  s.v = VERSAO_LOCAIS;
+  lsSet(lsKey(), JSON.stringify(s));
+  (s.log ||= []).push({ dia: s.dia || 1, t: "Locais atualizados para a versão 2 do guia", at: Date.now() });
+  return s;
 }
 let pubTimer;
 function salvar({ painel = true } = {}) {
@@ -453,7 +476,7 @@ function exportar() {
 }
 function importar(f) {
   if (!f) return;
-  f.text().then((t) => { const s = JSON.parse(t); if (!s?.locais) throw new Error(); estado = s; ui.sel = null; salvar(); renderTopo(); })
+  f.text().then((t) => { const s = JSON.parse(t); if (!s?.locais) throw new Error(); estado = migrar(s); ui.sel = null; salvar(); renderTopo(); })
     .catch(() => { ui.aviso = "Esse arquivo não é uma cópia do mapa."; renderAviso(); });
 }
 
