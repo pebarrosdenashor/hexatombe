@@ -59,7 +59,9 @@ function carregar() {
 /* Atualiza um ritual salvo com os textos novos dos locais padrão.
    Mantém o que o mestre já liberou (estado, dias, posição) e as notas que ele escreveu. */
 function migrar(s) {
-  if ((s.v || 1) >= VERSAO_LOCAIS) return s;
+  const v = s.v || 1;
+  if (v >= VERSAO_LOCAIS) return s;
+  if (v === 2) return migrarTextos(s);
   const forca = s.locais.find((l) => l.id === "forca");
   if (forca) forca.id = "hotel";
   for (const d of LOCAIS_PADRAO) {
@@ -74,8 +76,27 @@ function migrar(s) {
     if (d.id === "hotel") revelarTudo(l, l.desde?.explorado || 1, false);
   }
   s.v = VERSAO_LOCAIS;
-  lsSet(lsKey(), JSON.stringify(s));
   (s.log ||= []).push({ dia: s.dia || 1, t: "Locais atualizados para a versão 2 do guia", at: Date.now() });
+  lsSet(lsKey(), JSON.stringify(s));
+  return s;
+}
+
+/* Da versão 2 para a 3 (a água só volta no dia 6): troca só os textos e o dia em que
+   cada local afunda, mantendo o que já foi liberado detalhe por detalhe. */
+function migrarTextos(s) {
+  const MARCA = "\n\n— Suas notas anteriores —\n";
+  for (const d of LOCAIS_PADRAO) {
+    const l = s.locais.find((z) => z.id === d.id);
+    if (!l) continue;
+    const novo = localPadrao(d);
+    Object.assign(l, { txt: novo.txt, alerta: novo.alerta, alaga: novo.alaga });
+    novo.din.forEach((x, i) => { if (l.din[i]) l.din[i].t = x.t; else l.din.push(x); });
+    const i = (l.notas || "").indexOf(MARCA);
+    l.notas = novo.notas + (i >= 0 ? l.notas.slice(i) : "");
+  }
+  s.v = VERSAO_LOCAIS;
+  (s.log ||= []).push({ dia: s.dia || 1, t: "A água agora só volta no dia 6", at: Date.now() });
+  lsSet(lsKey(), JSON.stringify(s));
   return s;
 }
 let pubTimer;

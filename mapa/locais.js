@@ -3,7 +3,7 @@
    txt = o que se vê ao chegar · din = detalhes que o mestre libera um a um
    alerta = aviso em destaque · notas = segredo e como descobrir (só o mestre vê) */
 
-export const VERSAO_LOCAIS = 2;
+export const VERSAO_LOCAIS = 3;
 
 export const EQUIPES = {
   "Os da Floresta": "#7f9b4f",
@@ -18,12 +18,12 @@ export const TIPOS = { base: "Base", enigma: "Enigma", explorar: "Exploração" 
 
 // texto completo do dia (só o mestre vê)
 export const DIAS_MESTRE = {
-  1: ["A água recua", "A cidade inteira reaparece. A represa ainda tem a cor de sempre."],
+  1: ["A água recua", "A cidade inteira reaparece. A represa ainda tem a cor de sempre. A água só volta no dia 6."],
   2: ["A represa escurece", "A água ainda não volta, mas a muralha começa a mudar de cor. Quem encosta nela sente que está morna."],
   3: ["A muralha treme", "A muralha range e escorre filetes vermelhos pelas ruas da borda. A cidade ainda está seca, mas não por muito tempo."],
-  4: ["A água volta", "A margem afunda de uma vez: Mata dos Afogados, Feira, Santa Casa e Cemitério. Fazenda, topo do Calvário e Hotel Bela Vista viram ilhas."],
-  5: ["A água vira sangue", "Matadouro, Ponte Partida, Casarão e o Calvário afundam. A represa está vermelha."],
-  6: ["Só a praça da Matriz", "O último anel da cidade afunda, a Fazenda junto. Resta a praça da igreja, no centro, cercada de sangue, e o Hotel ilhado na rocha."]
+  4: ["A represa ferve", "A cidade continua seca, mas a muralha está vermelho-escura e borbulha na base. À noite se ouve a água batendo como um sino."],
+  5: ["A água vira sangue", "A represa está vermelha como sangue. A cidade ainda está seca: é o último dia com todos os locais de pé."],
+  6: ["A água volta", "A represa desaba sobre a cidade de uma vez. Tudo afunda menos a praça da Matriz, no centro, e o Hotel Bela Vista, ilhado na rocha."]
 };
 
 // texto que os jogadores veem (sem entregar o que vai afundar)
@@ -31,9 +31,9 @@ export const DIAS_JOGADOR = {
   1: ["A água recua", "A cidade inteira reaparece, coberta de lama e limo."],
   2: ["A represa escurece", "A muralha d'água mudou de cor. Quem encosta nela sente que está morna."],
   3: ["A muralha treme", "A muralha range. Filetes vermelhos escorrem pelas ruas da borda."],
-  4: ["A água volta", "A represa avançou sobre a margem da cidade."],
-  5: ["A água vira sangue", "A água está vermelha e já chega aos bairros do meio."],
-  6: ["Só a praça da Matriz", "Sobrou a praça da igreja, cercada de sangue."]
+  4: ["A represa ferve", "A muralha está vermelho-escura e borbulha na base. À noite, a água bate como um sino."],
+  5: ["A água vira sangue", "A represa está vermelha como sangue. A muralha se curva sobre a cidade."],
+  6: ["A água volta", "A represa desabou. Sobrou a praça da igreja, cercada de sangue."]
 };
 
 const L = (o) => o;
@@ -53,14 +53,14 @@ export const LOCAIS_PADRAO = [
       "Melhoria · Enfermaria: 1 kit de cura (Santa Casa) + roupa de cama + 1 sucata. +2 em Medicina e +1d6 PV no descanso lá dentro.",
       "Melhoria · Gerador: 4 sucata + 1 galão de diesel (jipe da Delegacia ou carros da Ponte) + Tecnologia DT 20. Luz à noite (+2 Percepção); o letreiro acende se quiserem.",
       "Melhoria · Mirante no terraço: 2 sucata + binóculo da Delegacia (ou a luneta dos Queiroz). Uma vez por dia, ver quem entra e sai de três locais.",
-      "Melhoria · Filtro de água: 3 sucata + areia do rio + carvão de Os da Floresta. Até 2 água limpa por dia, até o dia 5.",
+      "Melhoria · Filtro de água: 3 sucata + areia do rio + carvão de Os da Floresta. Até 2 água limpa por dia, até o dia 4 (depois a represa fica vermelha demais).",
       "Melhoria · Horta da piscina: 2 água por dia durante 2 dias + mudas da Família Queiroz. Depois, 1 comida por dia.",
       "Melhoria · Despensa de conserva: 1 sucata + sal grosso dos Comensais. Comida guardada no hotel não estraga.",
       "Melhoria · Sala de leitura: 1 sucata + três livros da biblioteca dos Zahab. +2 em Investigação e Ocultismo no hotel.",
       "Melhoria · Salão de música: 2 sucata + um instrumento da Romaria (zabumba ou pífano). Uma noite de música por dia: todos recuperam 1d6 de Sanidade.",
       "Melhoria · Suíte 1: a chave (com o coronel, na Delegacia) ou Crime DT 25 + 2 sucata. Melhor quarto, com cofre e acesso ao terraço."
     ],
-    alerta: "Nunca afunda, mas vira ilha no dia 4: daí em diante só se chega nadando (Atletismo DT 15) ou pela passarela da barragem.",
+    alerta: "Nunca afunda, mas vira ilha no dia 6: daí em diante só se chega nadando (Atletismo DT 15) ou pela passarela da barragem.",
     notas: "SEGREDO: o coronel construiu o hotel sabendo da inundação (\"Lago Tibúrcio\", margens loteadas). A família esperou por ele na suíte na noite de 2 de maio; ele estava preso na Delegacia. Pouco antes das 3h do dia 3, Celina desceu com Clarinha para procurá-lo e as duas nunca voltaram. No cofre da suíte: carta do engenheiro (as comportas podiam fechar uma semana depois) e o recibo do que o coronel pagou para adiantar.\n\nCOMO DESCOBRIR: 1) placa + livro de hóspedes levantam a pergunta. 2) diário do zelador. 3) salão de música abre o alçapão do palco: disco com o ensaio do discurso (\"bem-vindos às margens do Lago Tibúrcio\"). 4) sala de leitura (planta) + gerador (luz no porão) levam à parede do depósito 2: maquete do loteamento (2 sucata, 1 hora). 5) chave da suíte com o corpo do coronel; na suíte, malas e bilhete \"desci com a Clarinha para te procurar\". 6) cofre da suíte: 14-08-62 (mesma combinação do Casarão). Mirante revela a luneta apontada para a torre; horta revela a placa \"Loteamento Praia do Lago\"." }),
 
   L({ id: "fazenda", nome: "Fazenda Alto do Cruzeiro", tipo: "base", eq: "Família Queiroz", x: 780, y: 128, alaga: 6,
@@ -74,14 +74,14 @@ export const LOCAIS_PADRAO = [
       "Escritura no fundo falso do oratório (Percepção DT 20): a fazenda foi do coronel Tibúrcio.",
       "Luneta de latão no quarto do coronel (Crime DT 20): uma vez por dia, ver o que uma equipe está fazendo."
     ],
-    alerta: "Vira ilha no dia 4 e só afunda no dia 6. É o refúgio mais cobiçado do fim do ritual.",
-    notas: "SEGREDO: o poço não acaba em água. A dez metros há um túnel antigo até a cripta da Matriz (Atletismo DT 20 com corda e luz). Chega por baixo ao campanário invertido, mas a passagem tem uma grade com cinco fechaduras.\n\nCOMO DESCOBRIR: 1) a corda é longa demais para cinco metros de poço (Percepção DT 15). 2) mapa de 1950 no sótão do Cartório mostra o túnel. 3) descer leva à grade; as chaves estão no cofre do Casarão.\n\nO poço fica vermelho no dia 6." }),
+    alerta: "Único poço de água limpa até o fim. Afunda no dia 6, com o resto da cidade.",
+    notas: "SEGREDO: o poço não acaba em água. A dez metros há um túnel antigo até a cripta da Matriz (Atletismo DT 20 com corda e luz). Chega por baixo ao campanário invertido, mas a passagem tem uma grade com cinco fechaduras.\n\nCOMO DESCOBRIR: 1) a corda é longa demais para cinco metros de poço (Percepção DT 15). 2) mapa de 1950 no sótão do Cartório mostra o túnel. 3) descer leva à grade; as chaves estão no cofre do Casarão.\n\nNo dia 5 a água do poço já sai rosada; no dia 6 a fazenda afunda." }),
 
-  L({ id: "calvario", nome: "Morro do Calvário", tipo: "base", eq: "A Romaria", x: 215, y: 140, alaga: 5,
+  L({ id: "calvario", nome: "Morro do Calvário", tipo: "base", eq: "A Romaria", x: 215, y: 140, alaga: 6,
     txt: "Uma escadaria de pedra com as 14 estações da Via-Sacra sobe até um topo murado: o Pouso dos Romeiros, de 1921, com rancho, cozinha, cisterna e a gruta onde o andor da santa descansa.",
     din: [
       "Áreas: escadaria (uma pessoa por vez), portão e muro com seteiras, rancho dos romeiros com redes para quarenta, cozinha comunitária, Casa dos Milagres (ex-votos), Gruta da Santa, cisterna, barracas de lembrança e cruzeiro.",
-      "Cisterna: 1 água limpa por dia, até o dia 3. Barracas: velas para seis noites e 1 sucata.",
+      "Cisterna: 1 água limpa por dia, até o dia 4. Barracas: velas para seis noites e 1 sucata.",
       "Baús do rancho: zabumba, pífano e matraca. O Hotel precisa de um deles para o salão de música.",
       "Estação 1: um sino de mão que avisa o topo quando alguém começa a subir.",
       "Estação 6 (Percepção DT 15): um pano com o rosto de alguém da mesa, marcado a sangue.",
@@ -92,7 +92,7 @@ export const LOCAIS_PADRAO = [
       "Cântico da Romaria (Religião DT 15): \"o sino que toca para dentro\" e \"a corda que a santa guarda\".",
       "A santa chora sangue quando um sacrifício morre, e a Romaria sabe antes de todos."
     ],
-    alerta: "No dia 4 a escadaria afunda até a estação 9 e o topo vira ilha. No dia 5 o morro inteiro vai para o fundo.",
+    alerta: "Afunda no dia 6. Antes disso, a Romaria vai querer levar o andor para a praça da Matriz em procissão.",
     notas: "SEGREDO: o andor tem fundo oco com a corda original do sino de Luzia. Sem ela (ou outra trançada com cabelo de um sacrifício) o enigma não se resolve. A Romaria só a entrega em troca de uma relíquia: uma parte do corpo de um sacrifício de outra equipe.\n\nCOMO DESCOBRIR: 1) a corda de Luzia falta na torre da Matriz. 2) o cântico fala da corda que a santa guarda. 3) sessão \"Festa do Bom Jesus\" no Cine Teatro mostra a corda amarrada no andor. 4) o fundo do andor soa oco (Percepção DT 20).\n\nPerigos: fundos do morro só por escalada (Atletismo DT 20); velas acesas deixam o topo visível à noite." }),
 
   L({ id: "mata", nome: "Mata dos Afogados", tipo: "base", eq: "Os da Floresta", x: 195, y: 480,
@@ -108,7 +108,7 @@ export const LOCAIS_PADRAO = [
       "Cova rasa na clareira (Investigação DT 20): um corpo com roupas de outra época.",
       "Placa caída: \"Bom Jesus do Açude, fundada em 1889\"."
     ],
-    alerta: "É a primeira base a afundar, no dia 4. A Floresta vai precisar tomar a casa de alguém.",
+    alerta: "Afunda no dia 6. Até lá, é o melhor terreno de emboscada da arena.",
     notas: "SEGREDO: a mata foi plantada pelo padre Anselmo, uma árvore para cada morador que saiu antes da inundação, com plaquinhas de latão nos troncos. Os que ficaram estão no cruzeiro da Fazenda.\n\nCOMO DESCOBRIR: 1) plaquinhas meio engolidas pela casca (Investigação DT 20). 2) nomes batem com os registros de mudança no porão do Cartório. 3) livro de tombo da Matriz: \"plantei hoje mais doze, uma por família que partiu\".\n\nO ano 1889 da placa abre o cofre do Cartório." }),
 
   L({ id: "matadouro", nome: "Matadouro Municipal", tipo: "base", eq: "Os Comensais", x: 480, y: 502,
@@ -122,8 +122,8 @@ export const LOCAIS_PADRAO = [
       "Cofre do fiscal (Crime DT 20): uma chave com etiqueta \"sacristia\". Abre o armário da sacristia da Matriz.",
       "A câmara fria tranca por fora: Fortitude DT 15 por hora ou 1d6 PV de frio. Chão da sala de abate escorregadio em combate."
     ],
-    alerta: "Base quase sempre desguarnecida à noite, porque os Comensais saem para caçar. Afunda no dia 5.",
-    notas: "SEGREDO: a câmara funciona com Sangue. Um coração humano pendurado ainda bate; destruí-lo faz a comida apodrecer na hora.\n\nCOMO DESCOBRIR: 1) não há fio, motor nem gerador (Tecnologia DT 15). 2) batida fraca dentro da câmara (Percepção DT 20). 3) embrulho de lona no gancho do fundo; Ocultismo DT 20 para entender. 4) o livro do fiscal completa a história.\n\nDepois do dia 5, a carne continua fresca para quem mergulhar (Atletismo DT 20)." }),
+    alerta: "Base quase sempre desguarnecida à noite, porque os Comensais saem para caçar. Afunda no dia 6.",
+    notas: "SEGREDO: a câmara funciona com Sangue. Um coração humano pendurado ainda bate; destruí-lo faz a comida apodrecer na hora.\n\nCOMO DESCOBRIR: 1) não há fio, motor nem gerador (Tecnologia DT 15). 2) batida fraca dentro da câmara (Percepção DT 20). 3) embrulho de lona no gancho do fundo; Ocultismo DT 20 para entender. 4) o livro do fiscal completa a história.\n\nNo dia 6, a carne continua fresca para quem mergulhar (Atletismo DT 20)." }),
 
   L({ id: "cartorio", nome: "Cartório, Biblioteca e Câmara", tipo: "base", eq: "Os Zahab", x: 612, y: 298, ly: -20,
     txt: "Sobrado de esquina com azulejo português, CARTÓRIO em letras de ferro e o brasão da cidade. Livros de registro inchados de água no térreo, biblioteca em cima e uma porta interna para a Câmara Municipal, ao lado.",
@@ -137,7 +137,7 @@ export const LOCAIS_PADRAO = [
       "Biblioteca: almanaque, código civil e anuário. O Hotel precisa deles para a sala de leitura.",
       "Papel, tinta e lacre: para falsificar documentos ou mandar recados."
     ],
-    alerta: "Muitas janelas, escada podre e livros que pegam fogo. Afunda no dia 6; no dia 5 a água já molha o térreo.",
+    alerta: "Muitas janelas, escada podre e livros que pegam fogo. Afunda no dia 6.",
     notas: "SEGREDO: a Câmara votou 7 a 2 contra a venda. O tabelião Oswaldo Brandão, pago pelo coronel, fez uma ata falsa com unanimidade e falsificou sete assinaturas. Confissão e o dinheiro intocado estão no cofre de parede.\n\nCOMO DESCOBRIR: 1) jornal de 1972 (Investigação DT 20) diz rejeitada; ata do gabinete diz aprovada. 2) comparar assinaturas com certidões de casamento (Investigação DT 20): sete na mesma letra. 3) a letra é a do tabelião. 4) cofre: Crime DT 20 ou 1-8-8-9 (brasão da fachada, placa da Mata). 5) sessão \"Sessão da Câmara\" no Cine Teatro mostra sete mãos contra." }),
 
   /* ---------------- enigma ---------------- */
@@ -165,8 +165,8 @@ export const LOCAIS_PADRAO = [
       "Jazigo dos Tibúrcio (Crime DT 20): joias e um revólver no caixão do coronel, mas nenhum corpo. Ao lado, gavetas vazias reservadas para Celina e Maria Clara.",
       "Flores frescas nos cinco (Percepção DT 15): alguém da arena esteve aqui hoje."
     ],
-    alerta: "Afunda no dia 4. Quem não anotou as datas perde a pista mais fácil.",
-    notas: "SEGREDO: o coronel nunca foi enterrado; o corpo está na cela trancada da Delegacia. O caixão é um enterro simbólico.\n\nCOMO DESCOBRIR: 1) caixão vazio. 2) livro de ocorrências e cela trancada da Delegacia. 3) gavetas de Celina e Maria Clara ligam ao mistério do Hotel.\n\nDepois do dia 4: datas no arquivo do Cartório ou no filme de 2 de maio do Cine Teatro; deitar no túmulo exige mergulhar (Fortitude DT 20)." }),
+    alerta: "Afunda no dia 6. Quem não anotou as datas até lá perde a pista mais fácil.",
+    notas: "SEGREDO: o coronel nunca foi enterrado; o corpo está na cela trancada da Delegacia. O caixão é um enterro simbólico.\n\nCOMO DESCOBRIR: 1) caixão vazio. 2) livro de ocorrências e cela trancada da Delegacia. 3) gavetas de Celina e Maria Clara ligam ao mistério do Hotel.\n\nNo dia 6: datas no arquivo do Cartório ou no filme de 2 de maio do Cine Teatro; deitar no túmulo exige mergulhar (Fortitude DT 20)." }),
 
   L({ id: "correios", nome: "Correios", tipo: "explorar", eq: "", x: 390, y: 280, ly: -16,
     txt: "Agência pequena de placa amarela e azul desbotada, com uma caixa de coleta trancada na calçada. Escaninhos de madeira e sacos de lona até o teto. O último carimbo marca 02 MAI 1974.",
@@ -177,7 +177,7 @@ export const LOCAIS_PADRAO = [
       "Telegrama posto na caixa de coleta chega ao escaninho de outra base na manhã seguinte.",
       "Ler carta de morto: Vontade DT 15 ou passa a noite sem descanso."
     ],
-    alerta: "Afunda no dia 6. No dia 5 a água encharca os sacos de baixo.",
+    alerta: "Afunda no dia 6, com as cartas que ninguém leu.",
     notas: "SEGREDO: a caixa de coleta ainda entrega tudo, inclusive para as equipes NPC. Canal para negociar sem se encontrar e para ameaças.\n\nCOMO DESCOBRIR: 1) formulários com carimbo da data de hoje (Percepção DT 15). 2) carta posta some; a caixa aberta (Crime DT 20) está vazia. 3) na manhã seguinte, a carta chega ao destino." }),
 
   L({ id: "cine", nome: "Cine Teatro", tipo: "explorar", eq: "", x: 400, y: 420, ly: 24,
@@ -194,7 +194,7 @@ export const LOCAIS_PADRAO = [
       "Coroa de espinhos de arame nas coxias: +5 na Vontade do erro durante o toque. Doces da bombonière: 1 comida.",
       "Interromper a sessão: Vontade DT 20 ou fica preso na cadeira. Teto podre em combate."
     ],
-    alerta: "Afunda no dia 6. Na noite do dia 5, a sessão roda com o saguão já alagado.",
+    alerta: "Afunda no dia 6, com a plateia de roupas vazias ainda sentada.",
     notas: "SEGREDO: o operador era Adauto, zelador do Hotel. O filme de 2 de maio foi feito do terraço do hotel, com a luneta, a pedido do coronel.\n\nCOMO DESCOBRIR: 1) escala na porta da cabine: só \"Adauto\". 2) a letra das etiquetas é a do diário do zelador (Investigação DT 15). 3) a grade de varanda no canto da imagem é a do terraço do Hotel." }),
 
   L({ id: "santa", nome: "Santa Casa", tipo: "explorar", eq: "", x: 310, y: 200, ly: -16,
@@ -208,7 +208,7 @@ export const LOCAIS_PADRAO = [
       "Hábitos das freiras: a Romaria ignora quem os usa até falar ou atacar.",
       "Ficar ferido na enfermaria: Vontade DT 15 por hora ou 1d4 de Sanidade."
     ],
-    alerta: "Afunda no dia 4. Na manhã do dia 4 ainda há uma hora antes de a água chegar à farmácia.",
+    alerta: "Afunda no dia 6. Os remédios que sobrarem vão junto.",
     notas: "SEGREDO: o padre afogou os cinco num ritual para preparar o sino, um por santo. O paciente da ala trancada era o coroinha e viu tudo.\n\nCOMO DESCOBRIR: 1) prontuários. 2) filme da Ponte no Cine Teatro (Irmandade dos Sinos). 3) o paciente conta, se solto e bem tratado (Diplomacia DT 15)." }),
 
   L({ id: "delegacia", nome: "Delegacia", tipo: "explorar", eq: "", x: 600, y: 410, ly: 24,
@@ -237,7 +237,7 @@ export const LOCAIS_PADRAO = [
       "Adega: 2 água (vinho). Porta emparedada (2 sucata, 1 hora): 3 sucata e um castiçal (1d6).",
       "Dormir aqui: sonha que é o coronel e acorda com –1d4 de Sanidade."
     ],
-    alerta: "Afunda no dia 5. O cofre abre do mesmo jeito para quem mergulhar.",
+    alerta: "Afunda no dia 6. O cofre abre do mesmo jeito para quem mergulhar.",
     notas: "COFRE: 14-08-62 (bilhete + retrato + caderno; ano = 1973 - 11). Outras fontes: certidão no Cartório, sessão \"Os 11 anos de Clarinha\", caderninho do coronel. A mesma combinação abre o cofre da Suíte 1.\n\nSEGREDO: as chaves abrem a grade da cripta e chegam ao Sino sem o enigma, mas sem a marca de espinhos: tocar sem a marca mata. Para ter a marca, alguém deita no túmulo do padre enquanto outro abre a grade.\n\nCOMO DESCOBRIR: nomes das chaves = fechaduras da grade; selo da coroa (\"só aceita quem foi chamado\"); Ocultismo DT 25 para entender que as duas coisas precisam ser juntas." }),
 
   L({ id: "ponte", nome: "Ponte Partida", tipo: "explorar", eq: "", x: 655, y: 466, anchor: "end", lx: -14, ly: 20,
@@ -250,7 +250,7 @@ export const LOCAIS_PADRAO = [
       "Urubus voam em círculo sobre onde alguém morreu hoje.",
       "Combate na ponte: 1 em 6 por rodada de cair um pedaço do tabuleiro norte."
     ],
-    alerta: "Gargalo entre o centro e o Cemitério. Afunda no dia 5; no dia 4 a correnteza arrasta quem cai.",
+    alerta: "Gargalo entre o centro e o Cemitério. Afunda no dia 6.",
     notas: "SEGREDO: o padre explodiu a ponte com dinamite das obras da barragem, para ninguém levar os corpos dos cinco antes do ritual.\n\nCOMO DESCOBRIR: 1) ferragens estouradas para fora, com queimado (Percepção DT 20 ou Ciências DT 15). 2) pavio e caixote \"Obras da Barragem — Explosivos\" no leito (Investigação DT 15). 3) livro de tombo: \"pedi ao Senhor que me perdoe pela ponte\". 4) filme da inauguração no Cine Teatro." }),
 
   L({ id: "feira", nome: "A Feira", tipo: "explorar", eq: "", x: 240, y: 450, anchor: "end", lx: -12, ly: -14,
@@ -265,6 +265,6 @@ export const LOCAIS_PADRAO = [
       "Faixa \"NÃO SAIO\" atrás do balcão do bar, com assinaturas no verso.",
       "Correr pelo largo: Acrobacia DT 15 ou 1d4 de pregos e lata."
     ],
-    alerta: "A maior reserva de comida da arena, mas tudo está escondido e o largo é visível de várias bases. Afunda no dia 4.",
-    notas: "SEGREDO: o Comitê do Não Saio (os nomes do cruzeiro da Fazenda) escondeu comida para resistir à desapropriação. O padre era o tesoureiro. Nunca usaram: a água chegou uma semana antes, a semana que o coronel comprou.\n\nCOMO DESCOBRIR: 1) pichação da Ponte e faixa do bar. 2) assinaturas = nomes do cruzeiro (Investigação DT 15). 3) sessão \"Feira de sábado\" no Cine Teatro. 4) caderno do comitê sob o assoalho do coreto (Percepção DT 20): mapa de todos os esconderijos (com ele, sem teste) e assinatura \"Pe. Anselmo\".\n\nNo dia 4, o porão ainda dá 1 comida por mergulho (Atletismo DT 20)." })
+    alerta: "A maior reserva de comida da arena, mas tudo está escondido e o largo é visível de várias bases. Afunda no dia 6.",
+    notas: "SEGREDO: o Comitê do Não Saio (os nomes do cruzeiro da Fazenda) escondeu comida para resistir à desapropriação. O padre era o tesoureiro. Nunca usaram: a água chegou uma semana antes, a semana que o coronel comprou.\n\nCOMO DESCOBRIR: 1) pichação da Ponte e faixa do bar. 2) assinaturas = nomes do cruzeiro (Investigação DT 15). 3) sessão \"Feira de sábado\" no Cine Teatro. 4) caderno do comitê sob o assoalho do coreto (Percepção DT 20): mapa de todos os esconderijos (com ele, sem teste) e assinatura \"Pe. Anselmo\".\n\nNo dia 6, o porão ainda dá 1 comida por mergulho (Atletismo DT 20)." })
 ];

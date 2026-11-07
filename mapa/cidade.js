@@ -1,12 +1,12 @@
 /* Desenho da cidade de Bom Jesus do Açude (SVG 1000 x 700).
    Usado pela extensão e pelo gerador de imagens. Determinístico: sempre o mesmo traçado. */
 
-export const S = [1.08, 1.08, 1.08, .56, .40, .24];   // tamanho da terra seca por dia
+export const S = [1.08, 1.08, 1.08, 1.08, 1.08, .24];   // a água só volta no dia 6   // tamanho da terra seca por dia
 export const AGUA = ["#3d6672", "#4e5c66", "#654b55", "#7a3a43", "#842631", "#741520"];
 export const MURALHA = ["#1d3239", "#272b33", "#30232b", "#3a1b22", "#3c1218", "#330b10"];
 export const ONDA = ["#2f4f58", "#3b4550", "#4a3a44", "#582e36", "#5e2229", "#55161d"];
 export const COTA = [382, 389, 396, 403, 410, 417];
-export const ILHAS = [{ x: 780, y: 135, r: 80, ate: 6 }, { x: 215, y: 145, r: 72, ate: 5 }];
+export const ILHAS = [{ x: 780, y: 135, r: 80, ate: 6 }, { x: 215, y: 145, r: 72, ate: 6 }];
 export const USINA = /* Pedra do Mirante, onde fica o Hotel Bela Vista */ { x: 890, y: 306, w: 52, h: 48 };
 
 export const rElip = (x, y) => Math.hypot((x - 500) / 470, (y - 350) / 320);
@@ -42,7 +42,7 @@ const ESTATICO = `
     <g filter="url(#recorte)">
       <ellipse class="terra" cx="500" cy="350" rx="470" ry="320" fill="black"/>
       <circle class="ilha" data-ate="6" cx="780" cy="135" r="80" fill="black"/>
-      <circle class="ilha" data-ate="5" cx="215" cy="145" r="72" fill="black"/>
+      <circle class="ilha" data-ate="6" cx="215" cy="145" r="72" fill="black"/>
     </g>
     <rect x="890" y="306" width="52" height="48" fill="black"/>
   </mask>
@@ -111,7 +111,7 @@ const ESTATICO = `
   <g class="costa" fill="none" stroke="#d9cfb4" stroke-width="1.2" opacity="0" filter="url(#recorte)">
     <ellipse class="terra" cx="500" cy="350" rx="470" ry="320"/>
     <circle class="ilha" data-ate="6" cx="780" cy="135" r="80"/>
-    <circle class="ilha" data-ate="5" cx="215" cy="145" r="72"/>
+    <circle class="ilha" data-ate="6" cx="215" cy="145" r="72"/>
   </g>
 </g>
 <path d="M948,190 Q985,350 948,510" fill="none" stroke="#8f8a7a" stroke-width="10"/>
