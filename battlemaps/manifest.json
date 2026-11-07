@@ -1,0 +1,15 @@
+{
+  "name": "Battlemaps do Hexatombe",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Battlemaps do Hexatombe",
+    "icon": "https://pebarrosdenashor.github.io/hexatombe/battlemaps/icon.svg",
+    "popover": "https://pebarrosdenashor.github.io/hexatombe/battlemaps/index.html",
+    "height": 840,
+    "width": 600
+  },
+  "background_url": "https://pebarrosdenashor.github.io/hexatombe/battlemaps/background.html",
+  "author": "pebarrosdenashor",
+  "description": "Os 15 battlemaps de Bom Jesus do Açude: vincule cada mapa a uma cena, acompanhe os pontos de interesse e veja o Hotel mudar a cada melhoria."
+}
