@@ -20,3 +20,11 @@ Quem atualiza a cena é o fundo da extensão (`background.js`), então a mesa mu
 - `imagens/`: mapas sem grade, 50 px por quadrado; `imagens/hotel/`: camadas das melhorias, recortadas (a posição está em `camadas[].off`).
 - `previas/`: versões menores para a janela.
 - Para trocar uma imagem na mesa de quem já usa a extensão, suba a imagem nova e aumente `VERSAO` em `dados.js`.
+
+## Versão 1.1.0 — interface nova
+- Troca de local por uma galeria com miniaturas e busca (`miniaturas/`, 240 px, webp).
+- Abas: **Mapa**, **Local** e **Melhorias** (só no Hotel).
+- Filtros por tipo de ponto, barra de explorados, lista de todos os pontos.
+- Mapa: zoom com botões ou Ctrl + roda, arrastar para mover quando aproximado; setas ← → passam de ponto.
+- Edição: testes em campos separados (perícia, DT, resultado), tipo em botões.
+- Avisos em balão; só uma fonte externa (Alegreya SC 700), o resto usa a fonte do sistema.
