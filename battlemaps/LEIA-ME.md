@@ -8,7 +8,7 @@ Instalar: **Extensions → Add Extension** e colar
 ## O que faz (só para o mestre)
 - **Colocar nesta cena:** põe o mapa do local escolhido na cena, travado na camada de mapa, com 1 quadrado da grade = 1,5 m.
 - **Vincular à imagem selecionada:** troca uma imagem que já está na cena pelo mapa escolhido, no mesmo lugar.
-- **Pontos de interesse:** cada ponto tem testes, DTs, o que se descobre e itens. Em "Editar pontos" dá para mover, criar, apagar e reescrever pontos.
+- **Pontos de interesse:** cada ponto segue o modelo do livro: cabeçalho (nome e descrição básica, narrada a quem investiga), quadro de perícias (perícia, DT e informação) e descrição contextual, só para o mestre. Em "Editar pontos" dá para mover, criar, apagar e reescrever pontos.
 - **Mostrar os pontos na mesa:** coloca etiquetas ocultas (só o mestre vê) sobre o mapa. Mover ou editar um ponto na janela muda a etiqueta na mesa.
 - **Melhorias do Hotel:** cada melhoria marcada põe uma camada por cima do mapa do Hotel na cena; desmarcar tira a camada.
 

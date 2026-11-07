@@ -34,6 +34,7 @@ const ic = {
   elo: I(`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`, 14),
   desfaz: I(`<path d="m18.8 13.4 1.7-1.7a5 5 0 0 0-7-7l-1.7 1.7M5.2 10.6l-1.7 1.7a5 5 0 0 0 7 7l1.7-1.7M8 2v3M2 8h3M16 22v-3M22 16h-3"/>`, 14),
   busca: I(`<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>`),
+  livro: I(`<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>`),
   aviso: I(`<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>`),
   olho: I(`<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>`, 14),
   gota: I(`<path d="M12 2.7s7 7.3 7 12.3a7 7 0 0 1-14 0c0-5 7-12.3 7-12.3z"/>`, 14),
@@ -101,7 +102,7 @@ function montar() {
     if (!adding || ev.target.closest(".mk") || $("vp").dataset.arrastou) return;
     const [x, y] = posNoMapa(ev);
     const lista = pontosEditaveis();
-    lista.push({ n: "Novo ponto", a: "", x, y, t: [["Investigação", 15, ""]], d: "", i: [], k: "" });
+    lista.push({ n: "Novo ponto", b: "", a: "", x, y, t: [["Percepção", 10, ""]], d: "", i: [], k: "" });
     sel = lista.length - 1; adding = false; ocultos.delete(""); salvar(); renderMapa(); renderFicha(); renderLista();
     setTimeout(() => $("f-n")?.select(), 0);
   });
@@ -355,8 +356,13 @@ function renderFicha() {
   const feito = (E.feitos[cur] || []).includes(sel);
   if (!edit) {
     f.innerHTML = `${topo}
-      ${p.t.length ? `<div class="secao"><h3>Testes</h3><div class="testes">${p.t.map(([per, dt, res]) => `<div class="teste"><b>${esc(per && per !== "—" ? per : "Sem teste")}</b>${dt ? `<span class="dt">DT ${esc(dt)}</span>` : `<span class="dt sem">livre</span>`}${res ? `<span class="res">${esc(res)}</span>` : ""}</div>`).join("")}</div></div>` : ""}
-      ${p.d ? `<div class="secao"><h3>O que se descobre</h3><p class="descobre">${esc(p.d)}</p></div>` : ""}
+      <div class="poi">
+        <div class="poi-cab">${ic.busca}<div><b>${esc(p.n)}</b>${p.b ? `<small>${esc(p.b)}</small>` : ""}</div></div>
+        ${p.t.length ? `<table class="poi-quadro"><thead><tr><th>Perícia</th><th>DT</th><th>Informação</th></tr></thead>
+          <tbody>${p.t.map(([per, dt, res]) => `<tr><td class="per">${esc(per && per !== "—" ? per : "—")}</td><td class="c-dt">${dt ?? "—"}</td><td>${esc(res)}</td></tr>`).join("")}</tbody></table>` : ""}
+        ${p.d ? `<div class="poi-ctx">${ic.livro}<p>${esc(p.d)}</p></div>` : ""}
+      </div>
+      <p class="dica poi-dica">Leia o cabeçalho quando alguém investigar o ponto. O quadro diz o que cada perícia revela; o texto com o livro é só para você.</p>
       ${p.i.length ? `<div class="secao"><h3>Itens</h3><div class="itens">${p.i.map((x) => `<span>${esc(x)}</span>`).join("")}</div></div>` : ""}
       <button type="button" class="feito-btn" id="f-feito" aria-pressed="${feito}">${feito ? `${ic.check}Explorado pelos jogadores` : "Marcar como explorado"}</button>`;
     $("f-feito").onclick = () => {
@@ -368,13 +374,14 @@ function renderFicha() {
       <label class="campo"><span>Nome</span><input type="text" id="f-n" value="${esc(p.n)}"></label>
       <div class="campo"><span>Tipo</span><div class="tipos" id="f-k">${Object.entries(TAGS).map(([k, [n, c]]) => `<button type="button" data-k="${k}" style="--c:${c}" aria-pressed="${k === (p.k || "")}"><i></i>${n}</button>`).join("")}</div></div>
       <label class="campo"><span>Área</span><input type="text" id="f-a" value="${esc(p.a)}" placeholder="Ex.: Saguão"></label>
-      <div class="campo"><span>Testes</span><div class="testes" id="f-t">${p.t.map(([a, b, c], j) => `
+      <label class="campo"><span>Descrição básica · cabeçalho, narrada a quem investiga</span><input type="text" id="f-b" value="${esc(p.b || "")}" placeholder="Ex.: Dois pequenos potes de argila, tampados."></label>
+      <div class="campo"><span>Quadro de perícias</span><div class="testes" id="f-t">${p.t.map(([a, b, c], j) => `
         <div class="ed-teste" data-j="${j}"><input type="text" data-c="per" value="${esc(a === "—" ? "" : a)}" placeholder="Perícia" aria-label="Perícia">
           <input type="number" data-c="dt" value="${b ?? ""}" placeholder="DT" aria-label="DT">
-          <button type="button" class="ico fantasma perigo-btn" data-rm="${j}" aria-label="Tirar teste">${ic.x}</button>
-          <textarea data-c="res" placeholder="O que acontece" aria-label="O que acontece">${esc(c)}</textarea></div>`).join("")}</div>
-        <button type="button" class="fantasma" id="f-t-add">${ic.mais}Teste</button></div>
-      <label class="campo"><span>O que se descobre</span><textarea id="f-d">${esc(p.d)}</textarea></label>
+          <button type="button" class="ico fantasma perigo-btn" data-rm="${j}" aria-label="Tirar linha">${ic.x}</button>
+          <textarea data-c="res" placeholder="Informação que o personagem encontra" aria-label="Informação">${esc(c)}</textarea></div>`).join("")}</div>
+        <button type="button" class="fantasma" id="f-t-add">${ic.mais}Linha</button></div>
+      <label class="campo"><span>Descrição contextual · só para o mestre</span><textarea id="f-d" rows="5">${esc(p.d)}</textarea></label>
       <label class="campo"><span>Itens · separados por vírgula</span><input type="text" id="f-i" value="${esc(p.i.join(", "))}"></label>
       <div class="linha entre"><button type="button" class="fantasma perigo-btn" id="f-del">${ic.lixo}Apagar ponto</button>
         <button type="button" class="fantasma" id="f-orig">${ic.voltar}Restaurar originais</button></div>
@@ -382,17 +389,17 @@ function renderFicha() {
     const q = () => pontosEditaveis()[sel];
     const lerTestes = () => [...f.querySelectorAll(".ed-teste")].map((r) => {
       const v = (c) => r.querySelector(`[data-c="${c}"]`).value.trim();
-      return [v("per") || "—", v("dt") ? +v("dt") || null : null, v("res")];
+      return [v("per") || "Percepção", v("dt") ? +v("dt") || null : null, v("res")];
     });
     const sync = (redesenhar) => {
-      const x = q(); x.n = $("f-n").value; x.a = $("f-a").value; x.d = $("f-d").value;
+      const x = q(); x.n = $("f-n").value; x.b = $("f-b").value; x.a = $("f-a").value; x.d = $("f-d").value;
       x.i = $("f-i").value.split(",").map((s) => s.trim()).filter(Boolean); x.t = lerTestes();
       salvar(); renderMapa(); renderLista(); if (redesenhar) renderFicha();
     };
     f.querySelectorAll("input,textarea").forEach((e) => e.addEventListener("change", () => sync(false)));
     $("f-n").addEventListener("input", () => { f.querySelector(".tit h2").textContent = $("f-n").value; sync(false); });
     $("f-k").querySelectorAll("button").forEach((b) => b.onclick = () => { q().k = b.dataset.k; ocultos.delete(b.dataset.k); sync(true); });
-    $("f-t-add").onclick = () => { sync(false); q().t.push(["", null, ""]); salvar(); renderFicha(); f.querySelector(".ed-teste:last-child input")?.focus(); };
+    $("f-t-add").onclick = () => { sync(false); q().t.push(["Percepção", 10, ""]); salvar(); renderFicha(); f.querySelector(".ed-teste:last-child input")?.focus(); };
     f.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { sync(false); q().t.splice(+b.dataset.rm, 1); salvar(); renderFicha(); });
     const pedir = (txt, rot, acao) => {
       const c = $("f-conf"); c.hidden = false;

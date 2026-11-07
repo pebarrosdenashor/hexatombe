@@ -222,3 +222,20 @@ textarea{min-height:64px;resize:vertical}
   .melhorias{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- ponto de interesse: cabeçalho, quadro de perícias, descrição contextual ---------- */
+.poi{display:grid;border-radius:var(--r-s);overflow:hidden;border:1px solid var(--line-2)}
+.poi-cab{display:flex;gap:10px;align-items:flex-start;background:#0c0e0d;padding:10px 12px;border-left:3px solid var(--c)}
+.poi-cab svg{flex:none;width:20px;height:20px;margin-top:1px;color:var(--ink)}
+.poi-cab b{display:block;font-weight:700;font-size:.86rem;letter-spacing:.05em;text-transform:uppercase}
+.poi-cab small{display:block;margin-top:2px;font-size:.78rem;font-style:italic;letter-spacing:.02em;text-transform:uppercase;color:var(--soft)}
+.poi-quadro{width:100%;border-collapse:collapse;font-size:.85rem;background:var(--raise)}
+.poi-quadro th{text-align:left;font-weight:500;font-size:.74rem;color:var(--muted);padding:5px 10px;border-bottom:1px solid var(--line-2)}
+.poi-quadro td{padding:7px 10px;vertical-align:top;border-top:1px solid var(--line)}
+.poi-quadro td.per{font-weight:700;white-space:nowrap;color:#cfe0ae;background:var(--ok-soft)}
+.poi-quadro td.c-dt{font:700 .8rem var(--f-mono);text-align:center;white-space:nowrap;width:1%}
+.poi-quadro td:last-child{font-family:var(--f-mono);font-size:.8rem;color:var(--soft)}
+.poi-ctx{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--surface);border-top:1px solid var(--line-2)}
+.poi-ctx svg{flex:none;width:22px;height:22px;color:var(--ink);margin-top:1px}
+.poi-ctx p{margin:0;font-size:.87rem;line-height:1.5;color:var(--soft)}
+.poi-dica{margin:-2px 0 0;font-size:.74rem}

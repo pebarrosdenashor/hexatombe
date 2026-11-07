@@ -14,9 +14,23 @@ const PING = NS + "/ping";
 export const locPorId = (id) => LOCAIS.find((l) => l.id === id);
 const chave = (sala) => `${NS}/estado/${sala}`;
 
-export function estadoVazio() { return { melhorias: {}, feitos: {}, pontos: false, edits: {} }; }
+export function estadoVazio() { return { melhorias: {}, feitos: {}, pontos: false, edits: {}, fmt: 2 }; }
 export function lerEstado(sala) {
-  try { return Object.assign(estadoVazio(), JSON.parse(localStorage.getItem(chave(sala)) || "{}")); } catch { return estadoVazio(); }
+  try { return migrar(Object.assign(estadoVazio(), { fmt: 1 }, JSON.parse(localStorage.getItem(chave(sala)) || "{}"))); } catch { return estadoVazio(); }
+}
+/* formato 2 dos pontos: cabeçalho (b), quadro de perícias (t) e descrição contextual (d).
+   Pontos editados no formato antigo recebem o texto novo e mantêm posição, nome e itens. */
+function migrar(e) {
+  if (e.fmt >= 2) return e;
+  for (const [id, lista] of Object.entries(e.edits || {})) {
+    const orig = locPorId(id)?.pois || [];
+    lista.forEach((p) => {
+      const o = orig.find((x) => x.n === p.n);
+      if (o) { p.b = o.b; p.t = JSON.parse(JSON.stringify(o.t)); p.d = o.d; }
+      else { p.b = p.b || ""; p.t = (p.t || []).map(([a, b, c]) => [a && a !== "—" ? a : "Percepção", b ?? 5, c]); }
+    });
+  }
+  e.fmt = 2; return e;
 }
 export function salvarEstado(sala, e) {
   try { localStorage.setItem(chave(sala), JSON.stringify(e)); localStorage.setItem(PING, String(Date.now())); } catch { /* sem armazenamento */ }
