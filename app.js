@@ -1,9 +1,9 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.10.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.10.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.10.0";
-import * as PM from "./prato-mestre.js?v=2.10.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.10.0";
+import * as IMG from "./imagens.js?v=2.11.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.11.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.11.0";
+import * as PM from "./prato-mestre.js?v=2.11.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.11.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -905,31 +905,69 @@ function npcTest(n, pericia, extra = 0) {
 }
 function npcCard(c, ci) {
   npcPv(c); const mem = npcMember(c.id); const tIdx = mem ? state.equipes.indexOf(mem.t) : -1;
-  const tags = [mem && !mem.m.vivo ? `<span class="tag bad">morto</span>` : "", c.des ? `<span class="tag bad">desertor${num(c.pen) ? ` −${num(c.pen)}` : ""}</span>` : "",
-    (c.cond || []).length ? `<span class="tag bad">${esc(c.cond.join(", "))} <button class="icon" data-npcclr="${c.id}" title="Limpar condições">✕</button></span>` : "",
+  const eq = tIdx >= 0 ? state.equipes[tIdx] : null; const morto = !!(mem && !mem.m.vivo);
+  const conds = c.cond || []; const sub = ui.npcSub?.[c.id] || "combate";
+  const pct = (a, m) => num(m) > 0 ? clamp(Math.round(100 * num(a) / num(m)), 0, 100) : 0;
+  const mini = (k, a, m) => num(m) > 0 ? `<span class="npc-mini ${k}" title="${k.toUpperCase()} ${num(a)}/${num(m)}"><span class="mbar"><i style="width:${pct(a, m)}%"></i></span><em>${num(a)}</em></span>` : "";
+  const flags = [morto ? `<span class="flag bad" title="Morto">✝</span>` : "", c.des ? `<span class="flag bad" title="Desertor">⚑</span>` : "",
+    conds.length ? `<span class="flag warn" title="${esc(conds.join(", "))}">⚠${conds.length > 1 ? conds.length : ""}</span>` : ""].join("");
+  const vital = (k, rot) => `<div class="vital ${k}"><div class="vital-h"><span>${rot}</span><span class="vital-n"><input type="number" data-npc="${c.id}|${k}Atual" value="${esc(c[k + "Atual"])}" aria-label="${rot} atual"><i>/</i><input type="number" data-npc="${c.id}|${k}" value="${esc(c[k])}" aria-label="${rot} máximo"></span></div><div class="vbar"><i style="width:${pct(c[k + "Atual"], c[k])}%"></i></div></div>`;
+  const tiles = [["Defesa", c.def], ["Desloc.", c.desl], ["VD", c.vd], ["Machucado", c.maq]].filter(([, v]) => v !== undefined && v !== "")
+    .map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
+  const attrs = String(c.attrs || "").split(/\s*[·,;]\s*/).filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("");
+  const tags = [c.des ? `<span class="tag bad">desertor${num(c.pen) ? ` −${num(c.pen)}` : ""}</span>` : "",
+    conds.length ? `<span class="tag bad">${esc(conds.join(", "))} <button class="icon" data-npcclr="${c.id}" title="Limpar condições">✕</button></span>` : "",
     num(c.semAgua) ? `<span class="tag">sem água ×${c.semAgua}</span>` : "", num(c.semComida) ? `<span class="tag">sem comida ×${c.semComida}</span>` : "",
-    ...(c.rewards || []).map((r) => `<span class="tag good">✦ ${esc(r)}</span>`)].filter(Boolean).join(" ");
-  return `<details class="card beast custom npc" data-npcbox="${c.id}" ${ui.npcOpen === c.id ? "open" : ""}><summary><b>${esc(c.nome)}</b> <span class="muted">${esc(c.tipo || "NPC")}${tIdx >= 0 ? ` · ${esc(state.equipes[tIdx].nome)}` : " · sem equipe"}</span></summary>
-    <div class="row npc-top"><label class="inline">Equipe <select data-npcteam="${c.id}"><option value="-1">— nenhuma —</option>${opt(state.equipes.map((t, i) => [i, t.nome]), tIdx)}</select></label>
-      <span class="grow"></span><button class="ghost icon" data-npcexp="${c.id}" title="Baixar a ficha deste NPC (.txt) para editar e importar de volta">⤓ ficha</button><button class="ghost icon" data-bestedit="${c.id}">✎ editar</button><button class="ghost icon danger" data-bestdel="${c.id}">✕ apagar</button></div>
-    <div class="grid2 npc-pv">
-      <label>PV <span class="row"><input type="number" data-npc="${c.id}|pvAtual" value="${esc(c.pvAtual)}"> / <input type="number" data-npc="${c.id}|pv" value="${esc(c.pv)}"></span></label>
-      <label>PE <span class="row"><input type="number" data-npc="${c.id}|peAtual" value="${esc(c.peAtual)}"> / <input type="number" data-npc="${c.id}|pe" value="${esc(c.pe)}"></span></label>
+    ...(c.rewards || []).map((r) => `<span class="tag good">✦ ${esc(r)}</span>`)].filter(Boolean).join("");
+  const roll = (attr, rot, dado) => `<button class="nroll" ${attr}><span>${esc(rot)}</span><b>${esc(dado)}</b></button>`;
+  const testes = [roll(`data-mon="${ci}|per"`, "Percepção", c.per), roll(`data-mon="${ci}|ini"`, "Iniciativa", c.ini),
+    ...Object.entries(c.res || {}).map(([k, v]) => roll(`data-mon="${ci}|res|${k}"`, k, v)),
+    ...(c.pericias || []).map((p, pi) => roll(`data-npcper="${c.id}|${pi}"`, p[0], p[1]))].join("");
+  const ataques = [...(c.atq || []).map((a, ai) => `<button class="natk" data-monatk="${ci}|${ai}"><span class="natk-n">🎲 ${esc(a[0])}</span><span class="natk-d">${esc(a[1])}${a[2] ? ` · <b>${esc(a[2])}</b>` : ""}${a[3] ? ` ${esc(a[3])}` : ""}</span></button>`),
+    ...(c.extra || []).map((e, ei) => `<button class="natk alt" data-monex="${ci}|${ei}"><span class="natk-n">🎲 ${esc(e[0])}</span><span class="natk-d">${esc(e[1])}</span></button>`)].join("");
+  const defs = [["Presença perturbadora", c.pp], ["Resistências", c.rd], ["Vulnerável a", c.vuln]].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
+  const habs = npcHabs(c);
+  const paneBtn = (k, rot) => `<button data-npcsub="${c.id}|${k}" class="${sub === k ? "on" : ""}">${rot}</button>`;
+  return `<details class="card npc ${morto ? "dead" : ""}" style="--tc:${eq ? eq.cor : "#6b5a5e"}" data-npcbox="${c.id}" data-nome="${esc(String(c.nome || "").toLowerCase())}" ${ui.npcOpen === c.id ? "open" : ""}>
+    <summary class="npc-sum"><span class="npc-id"><b>${esc(c.nome)}</b><small>${esc(c.tipo || "NPC")}</small></span>
+      <span class="npc-vit">${mini("pv", c.pvAtual, c.pv)}${mini("pe", c.peAtual, c.pe)}</span>${flags ? `<span class="npc-flags">${flags}</span>` : ""}<span class="chev">›</span></summary>
+    <div class="npc-body">
+      <div class="npc-vitals">${vital("pv", "PV")}${num(c.pe) > 0 || num(c.peAtual) > 0 ? vital("pe", "PE") : ""}</div>
+      ${tiles || attrs ? `<div class="npc-stats">${tiles ? `<div class="npc-tiles">${tiles}</div>` : ""}${attrs ? `<div class="npc-attrs">${attrs}</div>` : ""}</div>` : ""}
+      ${tags ? `<div class="npc-tags">${tags}</div>` : ""}
+      <div class="npc-subtabs" data-npcsubs="${c.id}">${paneBtn("combate", "Combate")}${paneBtn("hab", `Habilidades${habs.length ? ` <small>${habs.length}</small>` : ""}`)}${paneBtn("lore", "Lore e notas")}</div>
+      <div class="npc-pane" data-pane="combate" ${sub === "combate" ? "" : "hidden"}>
+        <div class="npc-lbl">Testes</div><div class="npc-rolls">${testes}</div>
+        ${ataques ? `<div class="npc-lbl">Ataques</div><div class="npc-atks">${ataques}</div>` : ""}
+        ${defs ? `<dl class="npc-defs">${defs}</dl>` : ""}
+      </div>
+      <div class="npc-pane" data-pane="hab" ${sub === "hab" ? "" : "hidden"}>
+        ${habs.length ? `<div class="npc-habs">${habs.map((h) => `<div class="npc-hab">${h.nome ? `<b>${esc(h.nome)}</b>` : ""}<span>${esc(h.desc)}</span></div>`).join("")}</div>` : `<p class="muted">Nenhuma habilidade. Use ✎ para adicionar.</p>`}
+      </div>
+      <div class="npc-pane" data-pane="lore" ${sub === "lore" ? "" : "hidden"}>
+        <label class="npc-lore">📜 Lore <textarea data-npc="${c.id}|lore" rows="${Math.min(14, Math.max(3, String(c.lore || "").split("\n").length + 1))}" placeholder="Escreva aqui a história deste NPC…">${esc(c.lore || "")}</textarea></label>
+        <label>Notas do mestre <textarea data-npc="${c.id}|notas" rows="3" placeholder="Anotações rápidas sobre este NPC…">${esc(c.notas || "")}</textarea></label>
+        ${(c.historia || []).length ? `<div class="npc-lbl">História</div><ul class="plain small npc-hist">${c.historia.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
+      </div>
+      <div class="npc-foot"><label class="inline">Equipe <select data-npcteam="${c.id}"><option value="-1">— nenhuma —</option>${opt(state.equipes.map((t, i) => [i, t.nome]), tIdx)}</select></label>
+        <span class="grow"></span><button class="ghost icon" data-npcexp="${c.id}" title="Baixar a ficha deste NPC (.txt) para editar e importar de volta">⤓</button><button class="ghost icon" data-bestedit="${c.id}" title="Editar ficha">✎</button><button class="ghost icon danger" data-bestdel="${c.id}" title="Apagar NPC">🗑</button></div>
     </div>
-    ${tags ? `<div class="row" style="margin:4px 0">${tags}</div>` : ""}
-    ${c.def || c.desl || c.attrs ? `<p class="muted small">${c.def ? `Defesa ${esc(c.def)} · ` : ""}${c.desl ? `Desloc. ${esc(c.desl)} · ` : ""}${esc(c.attrs || "")}${c.pp ? `<br>Presença perturbadora: ${esc(c.pp)}` : ""}${c.rd ? `<br>Resistências: ${esc(c.rd)}` : ""}${c.vuln ? ` · Vulnerável: ${esc(c.vuln)}` : ""}</p>` : ""}
-    <div class="rolls">
-      <button data-mon="${ci}|per">Percepção ${esc(c.per)}</button><button data-mon="${ci}|ini">Iniciativa ${esc(c.ini)}</button>
-      ${Object.entries(c.res || {}).map(([k, v]) => `<button data-mon="${ci}|res|${k}">${k} ${esc(v)}</button>`).join("")}
-      ${(c.pericias || []).map((p, pi) => `<button data-npcper="${c.id}|${pi}">${esc(p[0])} ${esc(p[1])}</button>`).join("")}
-    </div>
-    <div class="atks">${(c.atq || []).map((a, ai) => `<button class="primary" data-monatk="${ci}|${ai}">🎲 ${esc(a[0])} <small>${esc(a[1])} · ${esc(a[2])} ${esc(a[3])}</small></button>`).join("")}
-      ${(c.extra || []).map((e, ei) => `<button data-monex="${ci}|${ei}">🎲 ${esc(e[0])} <small>${esc(e[1])}</small></button>`).join("")}</div>
-    ${npcHabs(c).length ? `<div class="npc-habs">${npcHabs(c).map((h) => `<div class="npc-hab">${h.nome ? `<b>${esc(h.nome)}.</b> ` : ""}<span>${esc(h.desc)}</span></div>`).join("")}</div>` : ""}
-    ${(c.historia || []).length ? `<details class="small"><summary class="muted">História</summary><ul class="plain">${c.historia.map((h) => `<li>${esc(h)}</li>`).join("")}</ul></details>` : ""}
-    <textarea data-npc="${c.id}|notas" rows="2" placeholder="Notas do mestre sobre este NPC…">${esc(c.notas || "")}</textarea>
-    <label class="npc-lore">📜 Lore <textarea data-npc="${c.id}|lore" rows="${Math.min(14, Math.max(3, String(c.lore || "").split("\n").length + 1))}" placeholder="Escreva aqui a história deste NPC…">${esc(c.lore || "")}</textarea></label>
   </details>`;
+}
+
+// Lista de NPCs agrupada por equipe, com busca e filtro
+function npcLista(all) {
+  let f = ui.npcFil ?? "all"; const q = String(ui.npcBusca || "").toLowerCase().trim();
+  const grupos = state.equipes.map((t, ti) => ({ k: String(ti), nome: t.nome, cor: t.cor, lista: [] })); const sem = { k: "none", nome: "Sem equipe", cor: "#6b5a5e", lista: [] };
+  for (const c of state.bestiario) { const m = npcMember(c.id); const ti = m ? state.equipes.indexOf(m.t) : -1; (ti >= 0 ? grupos[ti] : sem).lista.push(c); }
+  const todos = [...grupos, sem].filter((g) => g.lista.length);
+  if (!todos.some((g) => g.k === f)) f = "all";
+  const chip = (k, rot, n, cor) => `<button class="chip ${f === k ? "on" : ""}" ${cor ? `style="--tc:${cor}"` : ""} data-npcfil="${k}">${esc(rot)} <small>${n}</small></button>`;
+  const chips = `<div class="chips npc-filtros">${chip("all", "Todos", state.bestiario.length)}${todos.map((g) => chip(g.k, g.nome, g.lista.length, g.cor)).join("")}</div>`;
+  const vis = f === "all" ? todos : todos.filter((g) => g.k === f);
+  const corpo = vis.map((g) => `<div class="npc-grupo" ${q && !g.lista.some((c) => String(c.nome || "").toLowerCase().includes(q)) ? "hidden" : ""} style="--tc:${g.cor}"><div class="npc-ghead"><span>${esc(g.nome)}</span><small>${g.lista.length}</small></div>
+    ${g.lista.map((c) => npcCard(c, all.indexOf(c)).replace("<details ", `<details ${q && !String(c.nome || "").toLowerCase().includes(q) ? "hidden " : ""}`)).join("")}</div>`).join("");
+  return `<div class="npc-toolbar"><input id="npcBusca" type="search" placeholder="🔍 Buscar NPC…" value="${esc(ui.npcBusca || "")}"></div>${chips}${corpo}`;
 }
 
 /* ---------- Diário da equipe ---------- */
@@ -1403,7 +1441,6 @@ function tabExtras() {
 function tabBestiario() {
   const edit = ui.bestEdit ? state.bestiario.find((c) => c.id === ui.bestEdit) : null;
   const all = bestList();
-  const npcs = state.bestiario.map((c) => npcCard(c, all.indexOf(c))).join("");
   const livro = BESTIARIO.map((c) => { const ci = all.indexOf(c); return `<details class="card beast"><summary><b>${esc(c.nome)}</b> <span class="muted">${esc(c.tipo)} · VD ${c.vd}</span></summary>
     <div class="bstats"><div><span>Defesa</span><b>${c.def}</b></div><div><span>PV</span><b>${c.pv}</b><small>machucado ${c.maq}</small></div><div><span>Desloc.</span><b class="small">${esc(c.desl)}</b></div></div>
     <p class="muted small">${esc(c.attrs)}${c.pp ? `<br>Presença perturbadora: ${esc(c.pp)}` : ""}${c.rd ? `<br>Resistências: ${esc(c.rd)}` : ""}${c.vuln ? ` · Vulnerável: ${esc(c.vuln)}` : ""}</p>
@@ -1411,17 +1448,15 @@ function tabBestiario() {
     <div class="atks">${c.atq.map((a, ai) => `<button class="primary" data-monatk="${ci}|${ai}">🎲 ${esc(a[0])} <small>${esc(a[1])} · ${esc(a[2])} ${esc(a[3])}</small></button>`).join("")}${(c.extra || []).map((e, ei) => `<button data-monex="${ci}|${ei}">🎲 ${esc(e[0])} <small>${esc(e[1])}</small></button>`).join("")}</div>
     <ul class="plain small">${(c.hab || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
     <div class="row"><button class="ghost icon" data-livroexp="${ci}" title="Baixa a ficha; edite e importe para virar um NPC seu">⤓ ficha para editar</button><button class="ghost icon" data-livrocopia="${ci}">＋ copiar para meus NPCs</button></div></details>`; }).join("");
-  return `<details class="card" ${ui.bestEdit ? "open" : ""} id="bestNewBox"><summary><b>${edit ? `Editando: ${esc(edit.nome)}` : "＋ Novo NPC"}</b></summary>${bestForm(edit)}</details>
-  <section class="card npc-io"><h3>Fichas em arquivo</h3>
+  return `<details class="card npc-new" ${ui.bestEdit ? "open" : ""} id="bestNewBox"><summary><b>${edit ? `✎ Editando: ${esc(edit.nome)}` : "＋ Novo NPC"}</b></summary>${bestForm(edit)}</details>
+  ${state.bestiario.length ? npcLista(all) : `<section class="card npc-vazio"><p class="muted">Nenhum NPC ainda. Crie um acima, importe fichas abaixo ou copie uma ameaça do livro.</p></section>`}
+  <details class="card npc-io"><summary><b>⇅ Importar / exportar fichas</b></summary>
     <p class="muted small">Baixe as fichas (.txt), edite no Bloco de Notas e importe de volta: NPCs com o mesmo ID são atualizados (PV atuais, condições e equipe continuam), os outros entram como novos. Aceita também .json.</p>
-    <div class="row wrap"><button class="primary" id="btnNpcImp">⤒ Importar fichas</button><button id="btnNpcExpAll" ${state.bestiario.length ? "" : "disabled"}>⤓ Exportar todos</button><button class="ghost" id="btnNpcModelo">Baixar modelo em branco</button>
+    <div class="row wrap"><button class="primary" id="btnNpcImp">⤒ Importar fichas</button><button id="btnNpcExpAll" ${state.bestiario.length ? "" : "disabled"}>⤓ Exportar todos</button><button class="ghost" id="btnNpcModelo">Modelo em branco</button>
       <input type="file" id="npcArq" accept=".txt,.json,text/plain,application/json" multiple hidden></div>
     <details class="small"><summary class="muted">ou colar o texto da ficha</summary>
       <textarea id="npcCola" rows="6" placeholder="=== NPC ===&#10;Nome: …"></textarea><button id="btnNpcCola">Importar texto colado</button></details>
-  </section>
-  <div class="section-title">NPCs (${state.bestiario.length})</div>
-  <p class="muted">Ligue cada NPC a uma equipe pelo seletor “Equipe” (ou pela aba Equipes). Testes, desertores, sino, consumo e recompensas usam os dados daqui.</p>
-  ${npcs || `<section class="card"><p class="muted">Nenhum NPC ainda.</p></section>`}
+  </details>
   <details class="card"><summary><b>Ameaças do Hexatombe (livro)</b> <span class="muted">${BESTIARIO.length}</span></summary>
     <p class="muted">Também aparecem o Quibungo (SaH, p. 142) e zumbis de Sangue (OPRPG, p. 202–203).</p>${livro}</details>`;
 }
@@ -1438,7 +1473,7 @@ function render() {
   app.innerHTML = `<header class="top"><span class="logo" data-text="HEXATOMBE">HEXATOMBE</span><span class="role ${isGM() ? "gm" : ""}">${isGM() ? "Mestre" : "Jogador"}</span>
     <span class="daypill">Dia ${state.dia} · ${FASES[state.fase]}</span>
     ${isGM() ? `<button class="icon" id="btnUndoH" ${hist.length ? `title="Desfazer: ${esc(hist[hist.length - 1].label)}"` : 'disabled title="Nada para desfazer"'}>↶</button>` : ""}
-    <button class="icon" id="btnSom" title="Som do sino e dos dados">${somOn ? "🔔" : "🔕"}</button></header>
+    <button class="icon" id="btnTam" title="Tamanho da janela">⤡</button><button class="icon" id="btnSom" title="Som do sino e dos dados">${somOn ? "🔔" : "🔕"}</button></header>
     <nav class="tabs">${tabsOk.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${l}</button>`).join("")}</nav>
     <main>${body}</main>`;
   window.scrollTo(0, y);
@@ -1857,7 +1892,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.10.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.11.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2036,7 +2071,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.10.0", location.href).href;
+  const url = new URL("quadro.html?v=2.11.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2294,6 +2329,29 @@ async function start() {
   }
 }
 start();
+
+// NPCs: sub-abas, filtro por equipe e busca (sem passar pelo histórico de ações)
+app.addEventListener("click", (e) => {
+  const b = e.target.closest?.("button[data-npcsub], button[data-npcfil]"); if (!b) return;
+  e.stopImmediatePropagation();
+  if (b.dataset.npcfil) { ui.npcFil = b.dataset.npcfil; render(); return; }
+  const [id, k] = b.dataset.npcsub.split("|"); (ui.npcSub ||= {})[id] = k; ui.npcOpen = id;
+  const box = b.closest(".npc-body");
+  box.querySelectorAll(".npc-subtabs button").forEach((x) => x.classList.toggle("on", x === b));
+  box.querySelectorAll(".npc-pane").forEach((p) => { p.hidden = p.dataset.pane !== k; });
+}, true);
+app.addEventListener("input", (e) => {
+  const el = e.target;
+  if (el.id === "npcBusca") {
+    ui.npcBusca = el.value; const q = el.value.toLowerCase().trim();
+    app.querySelectorAll("details.npc[data-nome]").forEach((d) => { d.hidden = !!q && !d.dataset.nome.includes(q); });
+    app.querySelectorAll(".npc-grupo").forEach((g) => { g.hidden = !g.querySelector("details.npc:not([hidden])"); });
+    return;
+  }
+  const k = el.dataset?.npc; if (!k || !/\|(pv|pe)(Atual)?$/.test(k)) return; // barra de PV/PE acompanha a digitação
+  const v = el.closest(".vital"); if (!v) return; const [a, m] = v.querySelectorAll("input");
+  const p = num(m.value) > 0 ? clamp(Math.round(100 * num(a.value) / num(m.value)), 0, 100) : 0; v.querySelector(".vbar i").style.width = p + "%";
+});
 
 // Mantém aberto o cartão do NPC que o mestre está usando
 app.addEventListener("toggle", (e) => {

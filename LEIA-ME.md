@@ -158,3 +158,8 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - `mapa/imagens/dia-1.png` a `dia-6.png`: só a cidade, sem os locais (para os jogadores).
 - `mapa/imagens/mestre-dia-1.png` a `mestre-dia-6.png`: com todos os locais marcados.
 - `mapa/gerar.html?dia=3&mestre=1` desenha o mapa no navegador, caso queira gerar de novo.
+
+## v2.11 — janela ajustável e NPCs reorganizados
+
+- **Tamanho da janela:** botão ⤡ no topo (Compacta, Padrão, Larga, Máxima e ajuste fino de largura/altura) ou arraste a alça ◢ no canto inferior direito. Duplo clique na alça volta ao padrão. O tamanho fica salvo no seu navegador.
+- **Aba NPCs:** busca por nome, filtro por equipe, NPCs agrupados por equipe com barras de PV/PE já na lista. Ao abrir um NPC: PV/PE editáveis com barra, estatísticas em blocos e três sub-abas (Combate, Habilidades, Lore e notas). Equipe, baixar ficha, editar e apagar ficam no rodapé do cartão. Importar/exportar fichas fica recolhido no fim da aba.
