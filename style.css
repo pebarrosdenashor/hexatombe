@@ -561,3 +561,7 @@ details.npc[open] > .npc-sum { border-bottom: 1px solid var(--line); background:
 .contador .cctl { justify-content: center; gap: 4px; margin-top: 6px; }
 .contador .cctl .icon { min-width: 30px; }
 .contador .cval { width: 64px; text-align: center; font-family: var(--f-num); font-size: 18px; font-weight: 700; padding: 2px 4px; }
+.members td.mcont { width: 112px; white-space: nowrap; text-align: right; }
+.members td.mcont .icon { min-width: 22px; padding: 1px 4px; }
+.members .mcv { width: 40px; text-align: center; font-family: var(--f-num); font-weight: 700; padding: 1px 2px; }
+.contador .cnota { margin: 4px 0 0; }

@@ -1,10 +1,10 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.12.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.12.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.12.0";
-import * as PM from "./prato-mestre.js?v=2.12.0";
-import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.12.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.12.0";
+import * as IMG from "./imagens.js?v=2.13.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.13.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.13.0";
+import * as PM from "./prato-mestre.js?v=2.13.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.13.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.13.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -1229,7 +1229,8 @@ function tabEquipesGM() {
     ${t.membros.map((m, mi) => `<tr class="${m.vivo ? "" : "dead"}">
       <td>${knowMemBox(ti, m)}${esc(mName(m))}${m.sheetId ? ` <span class="tag small" title="Ligado a uma ficha">ficha</span>` : m.npcId ? ` <span class="tag small npc" title="NPC (aba NPCs)">npc</span>` : ""}${m.des ? ` <span class="tag small bad">desertor</span>` : ""}</td>
       <td>${isGM() ? `<select data-mem="${ti}|${mi}|sac" title="Estigma (sacrifício)"><option value="">—</option>${opt(ESTIGMAS.map((e) => e.nome), m.sac || "")}</select>` : m.sac ? `✠ ${esc(m.sac)}` : ""}</td>
-      <td>${isGM() ? `<button class="icon" data-memtog="${ti}|${mi}|vivo" title="Vivo/morto">${m.vivo ? "♥" : "☠"}</button><button class="icon" data-memtog="${ti}|${mi}|des" title="Desertor (só marca, sem efeitos)">✝</button><button class="icon danger" data-memdel="${ti}|${mi}">✕</button>` : m.vivo ? "♥" : "☠"}</td>
+      <td>${isGM() ? `<button class="icon" data-memtog="${ti}|${mi}|vivo" title="Vivo/morto">${m.vivo ? "♥" : "☠"}</button><button class="icon" data-memtog="${ti}|${mi}|des" title="Desertor (só marca, sem efeitos)">✝</button><button class="icon danger" data-memdel="${ti}|${mi}">✕</button>` : m.vivo ? "♥" : "☠"}</td>${isGM() && CONTADORES[contadorDe(t)]?.porMembro ? `
+      <td class="mcont" title="${CONTADORES[contadorDe(t)].nome} de ${esc(mName(m))}">${CONTADORES[contadorDe(t)].ic}<button class="icon" data-memc="${ti}|${mi}|-1">−</button><input type="number" min="0" class="mcv" data-memcset="${ti}|${mi}" value="${num(m[contadorDe(t)])}"><button class="icon" data-memc="${ti}|${mi}|1">+</button></td>` : ""}
     </tr>`).join("") || `<tr><td class="muted">Sem membros.</td></tr>`}
     </tbody></table>
     ${isGM() ? (ti === 0 ? `<div class="row addm">
@@ -1257,6 +1258,8 @@ function contadorBox(t, ti) {
   const k = contadorDe(t); const c = CONTADORES[k];
   const sel = `<select data-team="${ti}|contador" title="Contador especial da equipe" class="csel">${opt([["", "Sem contador"], ...Object.entries(CONTADORES).map(([kk, x]) => [kk, `${x.ic} ${x.nome}`])], k)}</select>`;
   if (!c) return `<div class="row contador off"><span class="muted small">Contador especial</span>${sel}</div>`;
+  if (c.porMembro) return `<div class="contador on"><div class="row"><b class="cnome">${c.ic} ${c.nome}</b>${sel}</div>
+    <p class="muted small cnota">Cada integrante tem a sua: marque na linha de cada um, acima. Total da equipe: <b>${t.membros.reduce((a, m) => a + num(m[k]), 0)}</b></p></div>`;
   return `<div class="contador on"><div class="row"><b class="cnome">${c.ic} ${c.nome}</b>${sel}</div>
     <div class="row cctl"><button class="icon" data-res="${ti}|${k}|-5" title="−5">−5</button><button class="icon" data-res="${ti}|${k}|-1">−</button>
       <input type="number" min="0" class="cval" data-contset="${ti}|${k}" value="${num(t[k])}">
@@ -1522,6 +1525,7 @@ function onChange(e) {
   const el = e.target; const d = el.dataset;
   if (d.selteam) { selTeam = Number(el.value); ui.achados = null; render(); return; }
   if (!isGM()) return;
+  if (d.memcset) { const [ti, mi] = d.memcset.split("|"); const t = state.equipes[ti]; t.membros[mi][contadorDe(t)] = Math.max(0, Math.round(num(el.value))); save(); return; }
   if (d.contset) { const [ti, k] = d.contset.split("|"); state.equipes[ti][k] = Math.max(0, Math.round(num(el.value))); save(); return; }
   if (d.team) { const [ti, k] = d.team.split("|"); state.equipes[ti][k] = el.value; save(k === "nome"); return; } // nome: sem redesenhar, para não engolir o próximo clique
   if (d.mem) {
@@ -1664,6 +1668,7 @@ function onClick(e) {
     const c = novoNpc(n); state.equipes[d.addnpc].membros.push({ id: uid(), nome: n, npcId: c.id, sheetId: null, vivo: true, sac: null, des: false });
     save(); toast(`${n} criado. Detalhe os atributos dele na aba NPCs.`); return;
   }
+  if (d.memc) { const [ti, mi, dv] = d.memc.split("|"); const t = state.equipes[ti]; const k = contadorDe(t); const m = t.membros[mi]; if (!k || !m) return; m[k] = Math.max(0, num(m[k]) + Number(dv)); save(); return; }
   if (d.res) { const [ti, r, dv] = d.res.split("|"); const t = state.equipes[ti]; t[r] = Math.max(0, num(t[r]) + Number(dv)); save(); return; }
   if (d.intapply) return aplicarRecompensa(app.querySelector(`[data-intsel="${d.intapply}"]`).value, d.intapply);
   if (b.id === "btnConsumo") {
@@ -1921,7 +1926,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.12.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.13.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2100,7 +2105,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.12.0", location.href).href;
+  const url = new URL("quadro.html?v=2.13.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2559,7 +2564,7 @@ function npcSimDialog() {
       ${equipes.map((ti) => { const p = props[ti]; const t = state.equipes[ti];
         return `<div class="ed-team npcsim" data-simteam="${ti}">
           <div class="row wrap"><label class="check"><input type="checkbox" class="sim-on" ${p ? "checked" : ""}> <b style="color:${t.cor}">${esc(t.nome)}</b></label>
-          <span class="muted small">💧 ${t.agua} · 🍖 ${t.comida} · ⚙ ${t.sucata}${contadorDe(t) ? ` · ${CONTADORES[contadorDe(t)].ic} ${num(t[contadorDe(t)])}` : ""} · ${npcVivos(ti).length} vivos</span><span class="grow"></span>
+          <span class="muted small">💧 ${t.agua} · 🍖 ${t.comida} · ⚙ ${t.sucata}${contadorDe(t) && !CONTADORES[contadorDe(t)].porMembro ? ` · ${CONTADORES[contadorDe(t)].ic} ${num(t[contadorDe(t)])}` : ""} · ${npcVivos(ti).length} vivos</span><span class="grow"></span>
           <select class="sim-tipo"><option value="">Sortear ação</option>${opt(NPC_ACOES, escolha[ti] || "")}</select><button class="ghost icon sim-re" title="Sortear de novo">🎲</button></div>
           ${p ? `<p><b>${esc(p.titulo)}</b>${p.efeitos.some((e) => e.k === "morte") ? ` <span class="tag bad">morte</span>` : ""}${p.efeitos.some((e) => e.k === "gancho") ? ` <span class="tag">gancho para a mesa</span>` : ""}</p><pre class="small">${esc(p.linhas.join("\n"))}</pre>` : `<p class="muted">Sem ação.</p>`}
         </div>`; }).join("")}

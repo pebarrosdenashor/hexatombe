@@ -170,3 +170,9 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - Botões −5, −, +, +5 ou digite o valor direto. O valor nunca fica abaixo de 0.
 - O **Escudo do Mestre** também mostra e altera esses pontos (aba Mesa, resumo do Hexatombe), mesmo com a janela do Hexatombe fechada.
 - Os jogadores não veem esses contadores.
+
+## Novidades da versão 2.13
+
+- **Fome agora é de cada comensal:** na aba Equipes, cada integrante de Os Comensais tem o seu contador (− valor +) na própria linha; o cartão mostra o total da equipe.
+- **Fervor do andor** continua um só para toda A Romaria.
+- O Escudo do Mestre mostra esses contadores também no combate.

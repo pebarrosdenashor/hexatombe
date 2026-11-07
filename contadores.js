@@ -7,8 +7,8 @@
 export const CONTADOR_KEY = "io.github.pebarrosdenashor.hexatombe:contador";
 
 export const CONTADORES = {
-  fome: { nome: "Fome", ic: "🩸" },
-  fervor: { nome: "Fervor", ic: "🕯" },
+  fome: { nome: "Fome", ic: "🩸", porMembro: true }, // cada comensal tem a sua
+  fervor: { nome: "Fervor do andor", ic: "🕯" }, // um só para toda a Romaria
 };
 
 /* Qual contador a equipe usa: escolhido pelo mestre ou, sem escolha, pelo nome */
@@ -27,7 +27,7 @@ export function lerOps() {
 /* Tira só os pedidos já lidos: um clique que chegue no meio do caminho não se perde */
 export function apagarOps(lidos = []) {
   try {
-    const id = (o) => `${o.at}|${o.ti}|${o.k}|${o.dv}|${o.set}`;
+    const id = (o) => `${o.at}|${o.ti}|${o.mid}|${o.k}|${o.dv}|${o.set}`;
     const ja = new Set(lidos.map(id)); const resto = lerOps().filter((o) => !ja.has(id(o)));
     if (resto.length) localStorage.setItem(CONTADOR_KEY, JSON.stringify(resto)); else localStorage.removeItem(CONTADOR_KEY);
   } catch { /* */ }
@@ -39,9 +39,12 @@ export function aplicarOps(state, ops) {
   for (const op of ops || []) {
     const t = state?.equipes?.[Number(op.ti)]; const k = op.k;
     if (!t || !CONTADORES[k]) continue;
-    if (op.set != null) t[k] = Math.max(0, Math.round(Number(op.set) || 0));
-    else t[k] = Math.max(0, (Number(t[k]) || 0) + (Number(op.dv) || 0));
-    linhas.push(`${t.nome}: ${CONTADORES[k].ic} ${CONTADORES[k].nome} ${t[k]}`);
+    // com mid, o ponto é do integrante (Fome de cada comensal); sem, é da equipe
+    const alvo = op.mid ? (t.membros || []).find((m) => m.id === op.mid) : t;
+    if (!alvo) continue;
+    if (op.set != null) alvo[k] = Math.max(0, Math.round(Number(op.set) || 0));
+    else alvo[k] = Math.max(0, (Number(alvo[k]) || 0) + (Number(op.dv) || 0));
+    linhas.push(`${op.mid ? alvo.nome || t.nome : t.nome}: ${CONTADORES[k].ic} ${CONTADORES[k].nome} ${alvo[k]}`);
   }
   if (linhas.length) state.rev = Date.now();
   return linhas;
