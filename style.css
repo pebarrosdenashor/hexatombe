@@ -549,3 +549,15 @@ details.npc[open] > .npc-sum { border-bottom: 1px solid var(--line); background:
 @media (max-width: 400px) { .npc-vit { width: 70px; } .npc-defs > div { grid-template-columns: 1fr; gap: 0; } }
 @media (min-width: 600px) { .npc-rolls { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); } }
 .npc-vitals > .vital:only-child { grid-column: 1 / -1; }
+
+/* Contadores especiais: Fome e Fervor */
+.contador { margin-top: 8px; gap: 8px; }
+.contador.off { justify-content: space-between; }
+.contador.off .csel { width: auto; font-size: 11px; padding: 2px 6px; opacity: .75; }
+.contador.on { background: color-mix(in srgb, var(--tc, #a33) 14%, var(--panel2)); border: 1px solid color-mix(in srgb, var(--tc, #a33) 45%, transparent); border-radius: 8px; padding: 7px 8px; }
+.contador.on > .row:first-child { justify-content: space-between; }
+.contador .cnome { font-size: 13px; letter-spacing: .02em; }
+.contador .csel { width: auto; font-size: 11px; padding: 2px 6px; }
+.contador .cctl { justify-content: center; gap: 4px; margin-top: 6px; }
+.contador .cctl .icon { min-width: 30px; }
+.contador .cval { width: 64px; text-align: center; font-family: var(--f-num); font-size: 18px; font-weight: 700; padding: 2px 4px; }

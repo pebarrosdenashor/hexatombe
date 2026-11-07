@@ -1,8 +1,9 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.11.1";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.11.1";
-import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.11.1";
-import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.11.1";
+import * as IMG from "./imagens.js?v=2.12.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.12.0";
+import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.12.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.12.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.12.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -55,7 +56,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.11.1", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.12.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
@@ -201,7 +202,23 @@ async function receberEquipe() {
     OBR.notification.show(`Hexatombe: ${st.equipes[ti].nome} entrou como equipe ${ti + 1}.`, "SUCCESS");
   } catch { /* */ }
 }
-window.addEventListener("storage", (e) => { if (e.key === IMPORT_KEY && e.newValue) receberEquipe(); });
+/* Fome e Fervor marcados no Escudo do Mestre, com a janela do Hexatombe fechada */
+async function receberContadores() {
+  if (role !== "GM") return;
+  if (await OBR.action.isOpen()) return; // a janela aberta cuida disso
+  const ops = lerOps(); if (!ops.length) return;
+  try {
+    const st = JSON.parse(localStorage.getItem(stateKey()) || "null");
+    if (!st?.equipes) return;
+    apagarOps(ops);
+    if (!aplicarOps(st, ops).length) return;
+    localStorage.setItem(stateKey(), JSON.stringify(st)); sendChunks({ kind: "state", state: st });
+  } catch { /* */ }
+}
+window.addEventListener("storage", (e) => {
+  if (e.key === IMPORT_KEY && e.newValue) receberEquipe();
+  if (e.key === CONTADOR_KEY && e.newValue) receberContadores();
+});
 
 OBR.onReady(async () => {
   roomId = OBR.room.id;

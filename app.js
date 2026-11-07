@@ -1,9 +1,10 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.11.1";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.11.1";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.11.1";
-import * as PM from "./prato-mestre.js?v=2.11.1";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.11.1";
+import * as IMG from "./imagens.js?v=2.12.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.12.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.12.0";
+import * as PM from "./prato-mestre.js?v=2.12.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.12.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.12.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -1246,8 +1247,28 @@ function tabEquipesGM() {
       ${["agua", "comida", "sucata"].map((r) => `<div><span>${{ agua: "💧 Água", comida: "🍖 Comida", sucata: "🔩 Sucata" }[r]}</span>
         <div class="row">${isGM() ? `<button class="icon" data-res="${ti}|${r}|-1">−</button>` : ""}<b>${t[r]}</b>${isGM() ? `<button class="icon" data-res="${ti}|${r}|1">+</button>` : ""}</div></div>`).join("")}
     </div>
+    ${isGM() ? contadorBox(t, ti) : ""}
   </section>`;
   }).join("") + relacoesCard() + (isGM() && !visibleSheets().length ? `<p class="muted">Nenhuma ficha encontrada neste navegador. Abra a extensão da ficha nesta sala (como mestre) para receber as fichas dos jogadores.</p>` : "");
+}
+
+/* Fome (Os Comensais) e Fervor (A Romaria) */
+function contadorBox(t, ti) {
+  const k = contadorDe(t); const c = CONTADORES[k];
+  const sel = `<select data-team="${ti}|contador" title="Contador especial da equipe" class="csel">${opt([["", "Sem contador"], ...Object.entries(CONTADORES).map(([kk, x]) => [kk, `${x.ic} ${x.nome}`])], k)}</select>`;
+  if (!c) return `<div class="row contador off"><span class="muted small">Contador especial</span>${sel}</div>`;
+  return `<div class="contador on"><div class="row"><b class="cnome">${c.ic} ${c.nome}</b>${sel}</div>
+    <div class="row cctl"><button class="icon" data-res="${ti}|${k}|-5" title="−5">−5</button><button class="icon" data-res="${ti}|${k}|-1">−</button>
+      <input type="number" min="0" class="cval" data-contset="${ti}|${k}" value="${num(t[k])}">
+      <button class="icon" data-res="${ti}|${k}|1">+</button><button class="icon" data-res="${ti}|${k}|5" title="+5">+5</button></div></div>`;
+}
+function receberContadores() {
+  if (!isGM()) return;
+  const ops = lerOps(); if (!ops.length) return;
+  apagarOps(ops);
+  const linhas = aplicarOps(state, ops); if (!linhas.length) return;
+  save(); toast(linhas[linhas.length - 1]);
+  if (lerOps().length) setTimeout(receberContadores, 50);
 }
 
 function tabIntencoes() {
@@ -1501,6 +1522,7 @@ function onChange(e) {
   const el = e.target; const d = el.dataset;
   if (d.selteam) { selTeam = Number(el.value); ui.achados = null; render(); return; }
   if (!isGM()) return;
+  if (d.contset) { const [ti, k] = d.contset.split("|"); state.equipes[ti][k] = Math.max(0, Math.round(num(el.value))); save(); return; }
   if (d.team) { const [ti, k] = d.team.split("|"); state.equipes[ti][k] = el.value; save(k === "nome"); return; } // nome: sem redesenhar, para não engolir o próximo clique
   if (d.mem) {
     const [ti, mi, k] = d.mem.split("|"); const m = state.equipes[ti].membros[mi];
@@ -1871,6 +1893,7 @@ function receberEquipe() {
 }
 window.addEventListener("storage", (e) => {
   if (e.key === IMPORT_KEY && e.newValue) receberEquipe();
+  if (e.key === CONTADOR_KEY && e.newValue) receberContadores();
   if (e.key === fichaKey()) softRender();
   if (!isGM() && e.key === lsState()) { try { const x = JSON.parse(e.newValue || "null"); if (x && num(x.rev) > num(state.rev)) { state = normalize(x); softRender(); } } catch { /* */ } }
 });
@@ -1898,7 +1921,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.11.1", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.12.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2077,7 +2100,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.11.1", location.href).href;
+  const url = new URL("quadro.html?v=2.12.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2324,7 +2347,7 @@ async function start() {
       });
       OBR.player.onChange((p) => { if (p.role !== role) { role = p.role; PM.atualizar(); render(); } });
       sceneOk = await OBR.scene.isReady(); OBR.scene.onReadyChange((r) => { sceneOk = r; });
-      if (isGM()) { fillOwners(); if (!lsGet(lsState())) lsSet(lsState(), JSON.stringify(state)); receberEquipe(); broadcastState(); } else sendChunks({ kind: "hello" });
+      if (isGM()) { fillOwners(); if (!lsGet(lsState())) lsSet(lsState(), JSON.stringify(state)); receberEquipe(); receberContadores(); broadcastState(); } else sendChunks({ kind: "hello" });
     });
   } else {
     if (new URLSearchParams(location.search).has("gm")) role = "GM";
@@ -2536,7 +2559,7 @@ function npcSimDialog() {
       ${equipes.map((ti) => { const p = props[ti]; const t = state.equipes[ti];
         return `<div class="ed-team npcsim" data-simteam="${ti}">
           <div class="row wrap"><label class="check"><input type="checkbox" class="sim-on" ${p ? "checked" : ""}> <b style="color:${t.cor}">${esc(t.nome)}</b></label>
-          <span class="muted small">💧 ${t.agua} · 🍖 ${t.comida} · ⚙ ${t.sucata} · ${npcVivos(ti).length} vivos</span><span class="grow"></span>
+          <span class="muted small">💧 ${t.agua} · 🍖 ${t.comida} · ⚙ ${t.sucata}${contadorDe(t) ? ` · ${CONTADORES[contadorDe(t)].ic} ${num(t[contadorDe(t)])}` : ""} · ${npcVivos(ti).length} vivos</span><span class="grow"></span>
           <select class="sim-tipo"><option value="">Sortear ação</option>${opt(NPC_ACOES, escolha[ti] || "")}</select><button class="ghost icon sim-re" title="Sortear de novo">🎲</button></div>
           ${p ? `<p><b>${esc(p.titulo)}</b>${p.efeitos.some((e) => e.k === "morte") ? ` <span class="tag bad">morte</span>` : ""}${p.efeitos.some((e) => e.k === "gancho") ? ` <span class="tag">gancho para a mesa</span>` : ""}</p><pre class="small">${esc(p.linhas.join("\n"))}</pre>` : `<p class="muted">Sem ação.</p>`}
         </div>`; }).join("")}

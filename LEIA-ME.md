@@ -163,3 +163,10 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 
 - **Tamanho da janela:** botão ⤡ no topo (Compacta, Padrão, Larga, Máxima e ajuste fino de largura/altura) ou arraste a alça ◢ no canto inferior direito. Duplo clique na alça volta ao padrão. O tamanho fica salvo no seu navegador.
 - **Aba NPCs:** busca por nome, filtro por equipe, NPCs agrupados por equipe com barras de PV/PE já na lista. Ao abrir um NPC: PV/PE editáveis com barra, estatísticas em blocos e três sub-abas (Combate, Habilidades, Lore e notas). Equipe, baixar ficha, editar e apagar ficam no rodapé do cartão. Importar/exportar fichas fica recolhido no fim da aba.
+
+## Novidades da versão 2.12 — Fome e Fervor
+
+- Na aba **Equipes** (mestre), cada equipe pode ter um contador especial: **🩸 Fome** (Os Comensais) ou **🕯 Fervor** (A Romaria). Equipes com "Comensais" ou "Romaria" no nome já vêm com o contador certo; para outras, escolha no menu do cartão da equipe.
+- Botões −5, −, +, +5 ou digite o valor direto. O valor nunca fica abaixo de 0.
+- O **Escudo do Mestre** também mostra e altera esses pontos (aba Mesa, resumo do Hexatombe), mesmo com a janela do Hexatombe fechada.
+- Os jogadores não veem esses contadores.
