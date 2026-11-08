@@ -1,5 +1,5 @@
 /* Gerado a partir dos battlemaps (versão 2 dos locais; mapas redesenhados em 08/11/2026). */
-export const VERSAO = 2;
+export const VERSAO = 3;
 export const LOCAIS = [
 {
 "id": "hotel",
@@ -1247,7 +1247,28 @@ export const LOCAIS = [
 "img": [
 2000,
 1500
+],
+"copa": {
+"nome": "Copas das árvores",
+"modos": [
+{
+"k": "cheia",
+"nome": "Cheias",
+"arq": "copa"
+},
+{
+"k": "transparente",
+"nome": "Transparentes",
+"arq": "copa_transparente"
+}
+],
+"off": [
+0,
+0,
+2000,
+1500
 ]
+}
 },
 {
 "id": "matadouro",

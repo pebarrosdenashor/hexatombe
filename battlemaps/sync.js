@@ -14,7 +14,7 @@ const PING = NS + "/ping";
 export const locPorId = (id) => LOCAIS.find((l) => l.id === id);
 const chave = (sala) => `${NS}/estado/${sala}`;
 
-export function estadoVazio() { return { melhorias: {}, feitos: {}, pontos: false, edits: {}, fmt: 2 }; }
+export function estadoVazio() { return { melhorias: {}, feitos: {}, pontos: false, edits: {}, copa: {}, fmt: 2 }; }
 export function lerEstado(sala) {
   try { return migrar(Object.assign(estadoVazio(), { fmt: 1 }, JSON.parse(localStorage.getItem(chave(sala)) || "{}"))); } catch { return estadoVazio(); }
 }
@@ -43,6 +43,9 @@ export function pontosDe(e, id) { return e.edits?.[id] || locPorId(id).pois; }
 
 export const urlMapa = (id) => `${BASE}imagens/${id}.png?v=${VERSAO}`;
 export const urlCamada = (k) => `${BASE}imagens/hotel/${k}.png?v=${VERSAO}`;
+/* copa das árvores (Mata): camada acima dos personagens; plataformas e cordas ficam no mapa, sempre opacas */
+export const modoCopa = (e, id) => { const c = locPorId(id)?.copa; if (!c) return null; const k = e.copa?.[id]; return c.modos.some((m) => m.k === k) ? k : c.modos[0].k; };
+export const urlCopa = (id, k) => { const c = locPorId(id).copa; return `${BASE}imagens/${id}/${c.modos.find((m) => m.k === k).arq}.png?v=${VERSAO}`; };
 
 /* põe um mapa novo na cena */
 export async function colocarMapa(id, pos = { x: 0, y: 0 }) {
@@ -119,6 +122,18 @@ async function passo(sala) {
         .zIndex((m.zIndex || 0) + 1 + n).attachedTo(m.id).name(`Melhoria · ${c.nome}`)
         .metadata({ [META]: { tipo: "camada", pai: m.id, k: c.k, v: VERSAO } }).build());
     });
+
+    // copa das árvores: fica na camada ATTACHMENT, acima dos tokens, e não pega cliques
+    const temCopa = filhos.filter((i) => i.metadata[META].tipo === "copa");
+    const querCopa = modoCopa(e, id);
+    for (const c of temCopa) if (c.metadata[META].modo !== querCopa || c.metadata[META].v !== VERSAO) del.push(c.id);
+    if (querCopa && !temCopa.some((c) => c.metadata[META].modo === querCopa && c.metadata[META].v === VERSAO)) {
+      const [x0, y0, x1, y1] = l.copa.off;
+      add.push(buildImage({ width: x1 - x0, height: y1 - y0, url: urlCopa(id, querCopa), mime: "image/png" }, { dpi: DPI_IMG, offset: { x: 0, y: 0 } })
+        .layer("ATTACHMENT").locked(true).disableHit(true).position(ponto(x0, y0)).scale(m.scale || { x: 1, y: 1 })
+        .attachedTo(m.id).name(`${l.copa.nome} · ${l.copa.modos.find((x) => x.k === querCopa).nome}`)
+        .metadata({ [META]: { tipo: "copa", pai: m.id, modo: querCopa, v: VERSAO } }).build());
+    }
 
     // pontos de interesse (só o mestre vê: itens ocultos)
     const temPt = filhos.filter((i) => i.metadata[META].tipo === "ponto");

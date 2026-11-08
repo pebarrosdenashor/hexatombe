@@ -37,3 +37,9 @@ Quem atualiza a cena é o fundo da extensão (`background.js`), então a mesa mu
 - **Hotel**: a base e as 12 camadas de melhoria foram geradas no estilo novo, em tamanho cheio (50 px por quadrado). Base + todas as camadas fica igual ao mapa desenhado com tudo pronto.
 - Os pontos de interesse foram mantidos; no Cemitério e na Ponte só mudaram de lugar para acompanhar o desenho novo.
 - `VERSAO` subiu para 2: cenas que já têm os mapas trocam a imagem sozinhas (pontos editados por você continuam com a posição antiga).
+
+## Versão 1.4.0 — copas da Mata
+- A Mata dos Afogados agora é o chão (com plataformas e cordas) + uma camada de copas por cima dos personagens (camada ATTACHMENT, travada, sem pegar cliques).
+- Na aba **Mapa**, com a Mata escolhida: **Copas das árvores · Cheias / Transparentes**. Cheias escondem quem está debaixo das árvores; transparentes (40%) deixam ver os tokens.
+- As plataformas de madeira e as cordas não fazem parte da copa: ficam sempre opacas, e quem sobe nelas aparece por cima.
+- Arquivos: `imagens/mata.png` (chão), `imagens/mata/copa.png` e `imagens/mata/copa_transparente.png`.

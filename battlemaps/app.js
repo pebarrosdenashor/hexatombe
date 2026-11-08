@@ -7,7 +7,7 @@
    ========================================================= */
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 import { LOCAIS } from "./dados.js";
-import { META, BASE, lerEstado, salvarEstado, pontosDe, locPorId, colocarMapa, vincularImagem, desvincular } from "./sync.js";
+import { META, BASE, modoCopa, lerEstado, salvarEstado, pontosDe, locPorId, colocarMapa, vincularImagem, desvincular } from "./sync.js";
 
 const TAGS = { pista: ["Pista", "var(--pista)"], "mistério": ["Mistério", "var(--misterio)"], item: ["Item", "var(--item)"], perigo: ["Perigo", "var(--perigo)"], "": ["Detalhe", "var(--nada)"] };
 const TIPO = { base: "Bases das equipes", enigma: "Enigma", explorar: "Exploração" };
@@ -73,6 +73,7 @@ function montar() {
     <section class="cena" id="cena" aria-label="Cena"></section>
     <nav class="abas" role="tablist" id="abas"></nav>
     <section class="painel" id="p-mapa" role="tabpanel">
+      <div class="copa" id="copa" hidden></div>
       <div class="barra"><div class="filtros" id="filtros"></div><div class="progresso" id="prog"></div></div>
       <div class="vp-casca">
         <div class="vp" id="vp"><div class="mapa" id="mapa"><img id="img" alt="" draggable="false"></div></div>
@@ -261,7 +262,9 @@ function renderFiltros() {
 }
 function renderMapa() {
   const l = L(), m = $("mapa"), img = $("img");
-  if (img.dataset.id !== cur) { img.src = `${BASE}previas/${cur}.jpg`; img.dataset.id = cur; img.alt = "Mapa de " + l.nome; }
+  const mc = modoCopa(E, cur), chaveImg = cur + (mc && mc !== l.copa.modos[0].k ? "_" + mc : "");
+  if (img.dataset.id !== chaveImg) { img.src = `${BASE}previas/${chaveImg}.jpg`; img.dataset.id = chaveImg; img.alt = "Mapa de " + l.nome; }
+  renderCopa();
   m.style.width = (zoom * 100) + "%";
   $("z-val").textContent = Math.round(zoom * 100) + "%";
   $("z-menos").disabled = zoom <= 1; $("z-mais").disabled = zoom >= 4; $("z-fit").disabled = zoom <= 1;
@@ -294,6 +297,20 @@ function renderMapa() {
     if ($("b-cancela")) $("b-cancela").onclick = () => { adding = false; renderMapa(); };
   } else fx.hidden = true;
   renderFiltros();
+}
+function renderCopa() {
+  const l = L(), box = $("copa");
+  if (!l.copa) { box.hidden = true; box.innerHTML = ""; return; }
+  const mc = modoCopa(E, cur);
+  box.hidden = false;
+  box.innerHTML = `<span class="copa-rot">${esc(l.copa.nome)}</span><div class="seg" role="group" aria-label="${esc(l.copa.nome)}">${l.copa.modos.map((m) =>
+    `<button type="button" data-k="${m.k}" aria-pressed="${m.k === mc}">${esc(m.nome)}</button>`).join("")}</div>
+    <span class="dica">Plataformas e cordas ficam sempre visíveis.</span>`;
+  box.querySelectorAll("button").forEach((b) => b.onclick = () => {
+    if (b.dataset.k === modoCopa(E, cur)) return;
+    E.copa = E.copa || {}; E.copa[cur] = b.dataset.k; salvar(); renderMapa();
+    toast(b.dataset.k === "transparente" ? "Copas transparentes na mesa" : "Copas cheias na mesa");
+  });
 }
 function arrastavel(b, i) {
   b.onpointerdown = (ev) => {
