@@ -1,5 +1,5 @@
-/* Gerado a partir dos battlemaps (versão 2 dos locais). */
-export const VERSAO = 1;
+/* Gerado a partir dos battlemaps (versão 2 dos locais; mapas redesenhados em 08/11/2026). */
+export const VERSAO = 2;
 export const LOCAIS = [
 {
 "id": "hotel",
@@ -426,10 +426,10 @@ export const LOCAIS = [
 "nome": "Barricadas",
 "req": "3 sucata · arrombar qualquer entrada vira Atletismo DT 20 e acorda a base.",
 "off": [
-239,
-167,
-1499,
-1076
+240,
+168,
+1508,
+1092
 ]
 },
 {
@@ -437,10 +437,10 @@ export const LOCAIS = [
 "nome": "Cozinha acesa",
 "req": "2 sucata + lenha da Mata (Sobrevivência DT 15) · 2 comida viram 3 refeições; jantar quente dá +1d4 PV no descanso.",
 "off": [
-1054,
-129,
-1449,
-599
+1055,
+130,
+1448,
+598
 ]
 },
 {
@@ -448,10 +448,10 @@ export const LOCAIS = [
 "nome": "Enfermaria no quarto 1",
 "req": "1 kit de cura (Santa Casa) + roupa de cama + 1 sucata · +2 em Medicina; +1d6 PV no descanso.",
 "off": [
-1564,
+1565,
 343,
-1748,
-477
+1770,
+482
 ]
 },
 {
@@ -459,10 +459,10 @@ export const LOCAIS = [
 "nome": "Gerador do porão",
 "req": "4 sucata + 1 galão de diesel (jipe da Delegacia ou carros da Ponte) + Tecnologia DT 20 · luz: +2 em Percepção dentro do hotel. Revela a porta emparedada do porão.",
 "off": [
-1534,
-1174,
-2164,
-1684
+1535,
+1175,
+2166,
+1686
 ]
 },
 {
@@ -471,9 +471,9 @@ export const LOCAIS = [
 "req": "2 sucata + binóculo (Delegacia) ou luneta dos Queiroz · uma vez por dia, ver quem entra e sai de três locais. Revela que a luneta fixa apontava para a torre da Matriz.",
 "off": [
 1556,
-984,
-2072,
-1152
+985,
+2080,
+1166
 ]
 },
 {
@@ -482,9 +482,9 @@ export const LOCAIS = [
 "req": "3 sucata + areia do rio + carvão de Os da Floresta · 2 água da represa viram água limpa por dia (para no dia 5, quando a represa fica vermelha).",
 "off": [
 1140,
-928,
-1421,
-1022
+927,
+1434,
+1036
 ]
 },
 {
@@ -492,10 +492,10 @@ export const LOCAIS = [
 "nome": "Horta da piscina",
 "req": "2 água por dia durante 2 dias + mudas da Família Queiroz · 1 comida por dia a partir do 3º dia. Revela a placa do loteamento enterrada.",
 "off": [
-458,
-1063,
-954,
-1360
+465,
+1061,
+969,
+1359
 ]
 },
 {
@@ -503,10 +503,10 @@ export const LOCAIS = [
 "nome": "Despensa de conserva",
 "req": "1 sucata + sal grosso dos Comensais · comida guardada não estraga.",
 "off": [
-1120,
-622,
-1281,
-878
+1117,
+619,
+1282,
+881
 ]
 },
 {
@@ -516,8 +516,8 @@ export const LOCAIS = [
 "off": [
 1757,
 68,
-1948,
-223
+1970,
+232
 ]
 },
 {
@@ -525,10 +525,10 @@ export const LOCAIS = [
 "nome": "Salão de música",
 "req": "2 sucata + um instrumento da Romaria · uma noite de música por dia: 1d6 de Sanidade para todos. Abre o alçapão do palco (o disco).",
 "off": [
-244,
-186,
-545,
-849
+245,
+174,
+544,
+848
 ]
 },
 {
@@ -536,10 +536,10 @@ export const LOCAIS = [
 "nome": "Suíte 1 aberta",
 "req": "a chave (bolso do coronel, Delegacia) ou Crime DT 25 + 2 sucata · melhor quarto, banheira, cofre e acesso ao terraço.",
 "off": [
-1522,
-534,
-2167,
-917
+1523,
+535,
+2166,
+916
 ]
 },
 {
@@ -547,10 +547,10 @@ export const LOCAIS = [
 "nome": "Depósito 2 aberto",
 "req": "Parede do porão quebrada: 2 sucata e uma hora de trabalho. Mostra a maquete do loteamento.",
 "off": [
-1765,
-1434,
-1972,
-1684
+1768,
+1433,
+1984,
+1688
 ]
 }
 ]
@@ -1237,7 +1237,7 @@ export const LOCAIS = [
 "São três plataformas, com vista para as trilhas."
 ]
 ],
-"d": "Posto de vigia e emboscada de Os da Floresta. Quem é de fora precisa de Atletismo DT 15 para subir pelas cordas.",
+"d": "Posto de vigia e emboscada de Os da Floresta. Quem é de fora precisa de Atletismo DT 15 para subir pelas cordas. Quem está lá em cima fica escondido pelas copas (+5 em Furtividade).",
 "i": [],
 "k": "perigo"
 }
@@ -1937,8 +1937,8 @@ export const LOCAIS = [
 "n": "Os cinco túmulos",
 "b": "Cinco túmulos lado a lado, cobertos de lama.",
 "a": "Os cinco",
-"x": 12.5,
-"y": 5.4,
+"x": 20.95,
+"y": 8.65,
 "t": [
 [
 "Investigação",
@@ -1954,8 +1954,8 @@ export const LOCAIS = [
 "n": "Túmulo vazio (o sexto)",
 "b": "Um sexto túmulo aberto, sem lápide.",
 "a": "O sexto",
-"x": 13.5,
-"y": 9.7,
+"x": 20.95,
+"y": 13.5,
 "t": [
 [
 "Percepção",
@@ -1976,8 +1976,8 @@ export const LOCAIS = [
 "n": "Livro de visitas",
 "b": "Um livro de visitas na capela mortuária.",
 "a": "Capela mortuária",
-"x": 4.3,
-"y": 18,
+"x": 22.6,
+"y": 3.6,
 "t": [
 [
 "Investigação",
@@ -1993,8 +1993,8 @@ export const LOCAIS = [
 "n": "Jazigo dos Tibúrcio",
 "b": "Um jazigo de mármore com o nome Tibúrcio.",
 "a": "Quadra das famílias",
-"x": 23.5,
-"y": 4.5,
+"x": 35.75,
+"y": 10.45,
 "t": [
 [
 "Percepção",
@@ -2013,8 +2013,8 @@ export const LOCAIS = [
 "n": "Flores frescas",
 "b": "Flores frescas sobre os cinco túmulos.",
 "a": "Os cinco",
-"x": 15.4,
-"y": 6.7,
+"x": 26.2,
+"y": 12.2,
 "t": [
 [
 "Percepção",
@@ -2030,8 +2030,8 @@ export const LOCAIS = [
 "n": "Caixões espalhados",
 "b": "Caixões desenterrados espalhados entre os túmulos.",
 "a": "Entre os túmulos",
-"x": 7,
-"y": 8,
+"x": 34.6,
+"y": 21.6,
 "t": [
 [
 "Percepção",
@@ -2047,8 +2047,8 @@ export const LOCAIS = [
 "n": "Anjo sem cabeça",
 "b": "A estátua de um anjo sem cabeça, no centro do cemitério.",
 "a": "Centro",
-"x": 14.2,
-"y": 15,
+"x": 21.9,
+"y": 11.1,
 "t": [
 [
 "Percepção",
@@ -2061,11 +2061,11 @@ export const LOCAIS = [
 "k": ""
 }
 ],
-"gw": 30,
-"gh": 22,
+"gw": 42,
+"gh": 31,
 "img": [
-1500,
-1100
+2100,
+1550
 ]
 },
 {
@@ -2996,8 +2996,8 @@ export const LOCAIS = [
 "n": "O vão",
 "b": "Um vão de dois metros no meio da ponte.",
 "a": "Meio da ponte",
-"x": 17.3,
-"y": 11.4,
+"x": 22.0,
+"y": 14.9,
 "t": [
 [
 "Percepção",
@@ -3013,8 +3013,8 @@ export const LOCAIS = [
 "n": "Ferragens estouradas",
 "b": "Ferragens retorcidas nas pontas do vão.",
 "a": "Pontas do vão",
-"x": 15.8,
-"y": 12.4,
+"x": 20.1,
+"y": 12.3,
 "t": [
 [
 "Percepção",
@@ -3035,8 +3035,8 @@ export const LOCAIS = [
 "n": "Tábuas da carroça",
 "b": "Tábuas de uma carroça no leito do rio.",
 "a": "Leito",
-"x": 10,
-"y": 13.3,
+"x": 11.2,
+"y": 19.7,
 "t": [
 [
 "Percepção",
@@ -3054,8 +3054,8 @@ export const LOCAIS = [
 "n": "Carros afundados",
 "b": "Três carros afundados no leito.",
 "a": "Leito",
-"x": 24.6,
-"y": 10.6,
+"x": 26.4,
+"y": 22.2,
 "t": [
 [
 "Percepção",
@@ -3079,8 +3079,8 @@ export const LOCAIS = [
 "n": "Caixote de explosivos",
 "b": "Restos de caixote meio enterrados na lama.",
 "a": "Leito",
-"x": 21,
-"y": 13.9,
+"x": 23.9,
+"y": 20.4,
 "t": [
 [
 "Investigação",
@@ -3096,8 +3096,8 @@ export const LOCAIS = [
 "n": "Placa da ponte",
 "b": "Uma placa de bronze no pilar central.",
 "a": "Pilar central",
-"x": 17.3,
-"y": 12.4,
+"x": 22.0,
+"y": 13.0,
 "t": [
 [
 "Investigação",
@@ -3113,8 +3113,8 @@ export const LOCAIS = [
 "n": "Ninho de urubus",
 "b": "Urubus pousados nas ferragens.",
 "a": "Ferragens",
-"x": 18.9,
-"y": 10.5,
+"x": 24.3,
+"y": 16.0,
 "t": [
 [
 "Percepção",
@@ -3130,8 +3130,8 @@ export const LOCAIS = [
 "n": "Pichação \"NÃO SAIO\"",
 "b": "Uma pichação na mureta da ponte.",
 "a": "Mureta",
-"x": 17.3,
-"y": 5.7,
+"x": 26.7,
+"y": 12.3,
 "t": [
 [
 "Percepção",
@@ -3144,11 +3144,11 @@ export const LOCAIS = [
 "k": "pista"
 }
 ],
-"gw": 34,
-"gh": 22,
+"gw": 44,
+"gh": 28,
 "img": [
-1700,
-1100
+2200,
+1400
 ]
 },
 {

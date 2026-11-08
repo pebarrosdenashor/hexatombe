@@ -28,3 +28,12 @@ Quem atualiza a cena é o fundo da extensão (`background.js`), então a mesa mu
 - Mapa: zoom com botões ou Ctrl + roda, arrastar para mover quando aproximado; setas ← → passam de ponto.
 - Edição: testes em campos separados (perícia, DT, resultado), tipo em botões.
 - Avisos em balão; só uma fonte externa (Alegreya SC 700), o resto usa a fonte do sistema.
+
+## Versão 1.3.0 — mapas redesenhados
+- Todos os mapas com sombras, relevo, texturas de chão e móveis mais detalhados.
+- **Cemitério** refeito (42×31): muro de pedra, capela, caminhos em cruz, quadras de covas, jazigos e o canto alagado com os caixões.
+- **Ponte Partida** refeita (44×28): estrada cortando o leito seco, vão com o pilar central, pedaço do tabuleiro caído e barricadas nas cabeceiras.
+- **Mata dos Afogados**: copas densas por cima de tudo, moitas, troncos caídos e quatro plataformas nas árvores.
+- **Hotel**: a base e as 12 camadas de melhoria foram geradas no estilo novo, em tamanho cheio (50 px por quadrado). Base + todas as camadas fica igual ao mapa desenhado com tudo pronto.
+- Os pontos de interesse foram mantidos; no Cemitério e na Ponte só mudaram de lugar para acompanhar o desenho novo.
+- `VERSAO` subiu para 2: cenas que já têm os mapas trocam a imagem sozinhas (pontos editados por você continuam com a posição antiga).
