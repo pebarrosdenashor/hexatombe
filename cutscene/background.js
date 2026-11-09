@@ -10,7 +10,7 @@ OBR.onReady(() => {
     const m = ev.data || {};
     if (m.kind === "tocar") {
       try { await OBR.modal.close(MODAL); } catch { /* */ }
-      await OBR.modal.open({ id: MODAL, url: `${BASE}cena.html?v=1.0.0&c=${encodeURIComponent(m.cena)}&n=${m.n}`, fullScreen: true, hidePaper: true });
+      await OBR.modal.open({ id: MODAL, url: `${BASE}cena.html?v=1.1.0&c=${encodeURIComponent(m.cena)}&n=${m.n}`, fullScreen: true, hidePaper: true });
     } else if (m.kind === "fechar") {
       try { await OBR.modal.close(MODAL); } catch { /* */ }
     }

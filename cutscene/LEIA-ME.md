@@ -8,7 +8,13 @@ Extensão do Owlbear Rodeo para tocar cutscenes em tela cheia para todos os joga
 cada um clica em "Clique para abrir os olhos" para começar (o clique libera o som no navegador).
 **Fechar para todos** encerra a cena em todas as telas. **Testar só pra mim** abre só para você.
 
-**Testar fora do Owlbear:** abra `cena.html?c=abertura` no navegador.
+**Cenas disponíveis:**
+- **Abertura: o despertar** (cerca de 2 min)
+- **Primeiro encontro** (cerca de 1 min e meio cada), para tocar quando os jogadores cruzam com cada equipe pela primeira vez:
+  A Romaria (Morro do Calvário), Os da Floresta (Mata dos Afogados), Os Zahab (Cartório),
+  Família Queiroz (Fazenda Alto do Cruzeiro) e Os Comensais (Matadouro Municipal).
+
+**Testar fora do Owlbear:** abra `cena.html?c=abertura` no navegador (ou `c=romaria`, `c=floresta`, `c=zahab`, `c=queiroz`, `c=comensais`).
 
 **Criar outra cena:** copie `abertura.js` (o desenho do lugar em `mundo()` e o roteiro em `roteiro()`)
-e acrescente uma entrada em `cenas.js`.
+e acrescente uma entrada em `cenas.js`. As figuras e máscaras ficam em `kit.js` e os sons em `som.js`.
