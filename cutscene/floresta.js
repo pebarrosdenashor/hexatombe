@@ -1,7 +1,7 @@
 /* Primeiro encontro: Os da Floresta, na Mata dos Afogados.
    Noite de lua. A enchente deixou coisas nos galhos. Na clareira, um cervo pasta,
    até levantar a cabeça e olhar demais. Um piscar de olhos depois, não é um cervo. */
-import { pessoa, MASCARA, olhos, rnd } from "./kit.js?v=1.2.0";
+import { pessoa, MASCARA, olhos, rnd } from "./kit.js?v=1.3.0";
 
 const CHAO = 1560;
 

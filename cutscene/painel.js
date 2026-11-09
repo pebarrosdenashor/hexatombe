@@ -1,5 +1,5 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import { CENAS } from "./cenas.js?v=1.2.0";
+import { CENAS } from "./cenas.js?v=1.3.0";
 
 const NS = "io.github.pebarrosdenashor.hexatombe-cutscene";
 const CH = NS + "/msg", MODAL = NS + "/cena";
@@ -24,7 +24,7 @@ $l.addEventListener("click", async (e) => {
   const id = b.dataset.tocar || b.dataset.testar;
   if (!OBR.isAvailable) { window.open(`cena.html?c=${id}`, "_blank"); return; }
   if (b.dataset.tocar) await OBR.broadcast.sendMessage(CH, { kind: "tocar", cena: id, n: Date.now() }, { destination: "ALL" });
-  else await OBR.modal.open({ id: MODAL, url: `${BASE}cena.html?v=1.2.0&c=${id}`, fullScreen: true, hidePaper: true });
+  else await OBR.modal.open({ id: MODAL, url: `${BASE}cena.html?v=1.3.0&c=${id}`, fullScreen: true, hidePaper: true });
 });
 document.getElementById("parar").addEventListener("click", () => {
   if (OBR.isAvailable) OBR.broadcast.sendMessage(CH, { kind: "fechar" }, { destination: "ALL" }).catch(() => {});

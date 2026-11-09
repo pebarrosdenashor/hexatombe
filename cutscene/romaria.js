@@ -1,7 +1,7 @@
 /* Primeiro encontro: A Romaria, no Morro do Calvário.
    Noite. Você está ao pé da escadaria das 14 estações; as velas acendem morro acima
    e a procissão sai do portão do pátio murado com o andor da santa. */
-import { pessoa, vela, veu, defsHalo, olhos, rnd } from "./kit.js?v=1.2.0";
+import { pessoa, vela, veu, defsHalo, olhos, rnd } from "./kit.js?v=1.3.0";
 
 const BASE_Y = 1960, TOPO_Y = 770, CX = 2000;
 const prog = (u) => 1 - Math.pow(1 - u, 1.75);

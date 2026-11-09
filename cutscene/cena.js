@@ -1,13 +1,13 @@
 /* Motor da cutscene: câmera em primeira pessoa (viewBox), pálpebras, foco, legendas e título.
    Abre em tela cheia no Owlbear (modal) ou direto no navegador para testar. */
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as SOM from "./som.js?v=1.2.0";
-import { CENAS } from "./cenas.js?v=1.2.0";
+import * as SOM from "./som.js?v=1.3.0";
+import { CENAS } from "./cenas.js?v=1.3.0";
 
 const NS = "io.github.pebarrosdenashor.hexatombe-cutscene";
 const MODAL = NS + "/cena";
 const q = new URLSearchParams(location.search);
-const idCena = q.get("c") || "abertura";
+const idCena = q.get("c") || window.CENA_PADRAO || "abertura";
 const VEL = Math.max(0.1, +q.get("vel") || 1); // só para testes
 const $ = (s) => document.querySelector(s);
 
@@ -26,7 +26,7 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 
 /* ---------- câmera ---------- */
-let svg = null;
+let svg = null, viva = null; // viva: cena que se desenha sozinha em canvas (montar + quadro)
 const cam = { x: 0, y: 0, w: 1000, rot: 0, blur: 0, luz: 1, tremor: 0, balanco: 1 };
 const anims = new Set();
 function animar(alvos, ms, curva = ease) {
@@ -43,14 +43,15 @@ function animar(alvos, ms, curva = ease) {
 }
 function desenhar(now) {
   anims.forEach((a) => a.passo(now));
-  if (svg) {
+  if (svg || viva) {
     const asp = innerHeight / innerWidth, s = now / 1000;
     const bx = (Math.sin(s * 0.53) * 9 + Math.sin(s * 1.31) * 4) * cam.balanco * (cam.w / 1600);
     const by = (Math.sin(s * 0.41 + 1) * 7 + Math.sin(s * 0.97) * 3) * cam.balanco * (cam.w / 1600);
     const tx = cam.tremor ? (Math.random() - 0.5) * cam.tremor * cam.w / 400 : 0;
     const ty = cam.tremor ? (Math.random() - 0.5) * cam.tremor * cam.w / 400 : 0;
     const h = cam.w * asp;
-    svg.setAttribute("viewBox", `${(cam.x - cam.w / 2 + bx + tx).toFixed(1)} ${(cam.y - h / 2 + by + ty).toFixed(1)} ${cam.w.toFixed(1)} ${h.toFixed(1)}`);
+    if (svg) svg.setAttribute("viewBox", `${(cam.x - cam.w / 2 + bx + tx).toFixed(1)} ${(cam.y - h / 2 + by + ty).toFixed(1)} ${cam.w.toFixed(1)} ${h.toFixed(1)}`);
+    else viva.quadro({ x: cam.x + bx + tx, y: cam.y + by + ty, w: cam.w }, now);
     mundo.style.transform = `rotate(${(cam.rot + Math.sin(s * 0.37) * 0.35 * cam.balanco).toFixed(2)}deg) scale(1.08)`;
     mundo.style.filter = `blur(${cam.blur.toFixed(1)}px) brightness(${cam.luz.toFixed(3)}) saturate(${(0.55 + cam.luz * 0.35).toFixed(2)})`;
   }
@@ -96,7 +97,8 @@ async function cartaz(html, ms = 1800) { checa(); titulo.innerHTML = html; titul
 async function escurece(v = 1, ms = 1500) { checa(); veu.style.transition = `opacity ${ms}ms ease`; veu.style.opacity = String(v); await espera(ms); }
 
 const api = { animar, olhos, piscar, diz, limpa, cartaz, escurece, espera, som: SOM, cam,
-  mundo: () => svg, el: (s) => svg.querySelector(s) };
+  mundo: () => svg, el: (s) => svg?.querySelector(s) };
+if (q.has("dbg")) window.__cena = { cam, api };
 
 /* ---------- ciclo ---------- */
 function grao() {
@@ -117,7 +119,8 @@ async function fechar() {
 async function tocar() {
   const def = CENAS[idCena]; if (!def) { porta.querySelector("p").textContent = "Cena não encontrada."; return; }
   const mod = await def.carregar();
-  mundo.innerHTML = mod.mundo(); svg = mundo.querySelector("svg");
+  if (mod.montar) { await mod.montar(mundo); viva = mod; }
+  else { mundo.innerHTML = mod.mundo(); svg = mundo.querySelector("svg"); }
   Object.assign(cam, mod.camInicial || {});
   porta.querySelector("h2").textContent = def.convite || "Clique para abrir os olhos";
   porta.classList.add("pronto");

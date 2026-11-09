@@ -1,7 +1,7 @@
 /* Primeiro encontro: Família Queiroz, na Fazenda Alto do Cruzeiro.
    Fim de tarde. Você sobe o morro sem bandeira branca; um brilho na caixa d'água,
    um tiro aos seus pés e a família inteira olhando lá de cima. Ao anoitecer, a vela do oratório acende sozinha. */
-import { pessoa, chapeu, veu, olhos, rnd } from "./kit.js?v=1.2.0";
+import { pessoa, chapeu, veu, olhos, rnd } from "./kit.js?v=1.3.0";
 
 const TOPO = 770;
 

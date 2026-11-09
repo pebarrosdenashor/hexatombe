@@ -1,7 +1,7 @@
 /* Primeiro encontro: Os Zahab, no Cartório, Biblioteca e Câmara.
    Noite. Luar pelas janelas altas. Cinco pessoas em cinco cantos da sala, cada uma com um livro,
    viram a página no mesmo instante, respiram juntas e levantam a cabeça juntas. */
-import { pessoa, turbante, olhos, rnd } from "./kit.js?v=1.2.0";
+import { pessoa, turbante, olhos, rnd } from "./kit.js?v=1.3.0";
 
 const CHAO = 1500, OURO = "#d4a63c";
 
