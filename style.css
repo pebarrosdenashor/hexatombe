@@ -578,3 +578,17 @@ details.npc[open] > .npc-sum { border-bottom: 1px solid var(--line); background:
 .npc-hab.esthab .estusar { margin-left: auto; }
 button.estusar { background: #8e0f1b; border: 1px solid #e0141f; color: #fff; font-weight: 600; padding: 3px 10px; border-radius: 6px; box-shadow: 0 0 10px rgba(224, 20, 31, .45); cursor: pointer; }
 button.estusar:hover { background: #b0121f; box-shadow: 0 0 16px rgba(255, 42, 53, .7); }
+
+/* ---------- Ritmo do ritual (v2.15) ---------- */
+.card.ritmo .velas { margin: 6px 0 8px; gap: 10px; }
+.relo-app { text-align: center; font-size: 13px; }
+.relo-app b { font-family: Cinzel, serif; font-size: 16px; letter-spacing: .04em; }
+.relo-app b.urgente { color: #ff4a5e; animation: rbate 1s ease-in-out infinite; }
+.relo-app b.acabou { color: #ff2a44; }
+.relo-barra { height: 5px; border-radius: 3px; background: var(--panel2); margin: 6px auto 0; max-width: 280px; overflow: hidden; }
+.relo-barra i { display: block; height: 100%; background: linear-gradient(90deg, var(--blood), var(--accent)); transition: width 1s linear; }
+@keyframes rbate { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
+.card.ritmo details { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.card.ritmo summary { cursor: pointer; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.card.ritmo details .row { margin: 6px 0; }
+body.calmo .relo-app b { animation: none; }

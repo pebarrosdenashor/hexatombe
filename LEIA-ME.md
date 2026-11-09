@@ -182,3 +182,12 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - **✠ Estigma do sacrifício:** deixe em “Automático” para usar o estigma do integrante na equipe, ou escolha um.
 - Na aba Habilidades do NPC, a do Estigma aparece em vermelho com **✠ Usar**: todos na sala veem a animação do estigma e ouvem o som (precisa do Escudo do Mestre instalado na sala). No Escudo do Mestre, usar essa habilidade no Combate faz o mesmo.
 - No arquivo .txt das fichas: comece o nome da habilidade com ✠ (`## ✠ Fúria do Cervo`) e use a linha `Estigma: Rancor` no topo, se quiser fixar o estigma.
+
+## Novidades da versão 2.15 — ritmo do ritual
+
+- **Cartão de abertura:** ao amanhecer e ao anoitecer, um cartão em tela cheia aparece para toda a mesa (dia, frase da Coroa, sacrifícios e as velas), com som. Na noite do dia 6 vira **Lua de Sangue**. Fecha sozinho ou com um clique. O mestre pode repetir com "🎬 Mostrar o cartão de agora para todos".
+- **Mapa escurecendo:** na fase de Conclusão (noite) o mapa escurece aos poucos, sem cobrir os tokens; na Lua de Sangue fica avermelhado. Some ao amanhecer.
+- **Relógio do sacrifício:** o mestre liga uma contagem regressiva (minutos e "até a meia-noite", "até o sacrifício"…), com +5 min, pausar e parar. Quando chega a zero, o sino toca em todas as telas.
+- **Seis velas:** uma por estigma; apaga (com fumaça) quando o sacrifício daquele estigma morre. Funciona com mortes anônimas, porque só mostra o estigma.
+- **Relógio na tela:** dia, fase, velas e relógio num quadrinho sobre o mapa. Cada pessoa pode esconder (✕), trocar de lugar (⇄: topo, canto direito, embaixo) e ligar "reduzir efeitos" na aba Ritual → "Na minha tela".
+- O mestre liga/desliga cada efeito para a mesa na aba Ritual → Ritmo do ritual → Controles do mestre.

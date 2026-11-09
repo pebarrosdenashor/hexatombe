@@ -1,10 +1,11 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.14.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.14.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.14.0";
-import * as PM from "./prato-mestre.js?v=2.14.0";
-import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.14.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.14.0";
+import * as IMG from "./imagens.js?v=2.15.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.15.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.15.0";
+import * as PM from "./prato-mestre.js?v=2.15.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.15.0";
+import { ROTULOS, velasHTML, VELAS_CSS, relogio as relogioDe, mmss, cartaoDe, pref, opcoes as ritmoOp } from "./ritmo.js?v=2.15.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.15.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -406,7 +407,7 @@ function revelarMorte(id) {
   addEvent(txt); announce(txt); save();
 }
 function avancarFase() {
-  if (state.fase < 2) { state.fase++; addEvent(`Dia ${state.dia}: ${FASES[state.fase]}.`); announce(`Hexatombe — dia ${state.dia}: ${FASES[state.fase]}`); return save(); }
+  if (state.fase < 2) { state.fase++; addEvent(`Dia ${state.dia}: ${FASES[state.fase]}.`); announce(`Hexatombe — dia ${state.dia}: ${FASES[state.fase]}`); save(); if (state.fase === 2) enviarCartao("noite"); return; }
   if (state.dia >= 6) return toast("O sexto dia é o último. Use o sacrifício final na aba Ritual.");
   const linhas = [];
   if (!sacrificiosHoje().length) { state.fracassou = true; linhas.push(`⚠ O dia ${state.dia} terminou sem sacrifício: pelas regras, o Hexatombe fracassa.`); }
@@ -420,6 +421,54 @@ function avancarFase() {
   for (const l of linhas) addEvent(l);
   announce(linhas.join("\n"));
   save();
+  enviarCartao("dia");
+}
+/* ---------- Ritmo do ritual (v2.15): cartão de abertura e relógio do sacrifício ---------- */
+function enviarCartao(evt, forcar = false) {
+  if (!obrOk || !isGM() || (!forcar && !ritmoOp(state).cartao)) return;
+  const c = cartaoDe(evt, state);
+  c.velasSt = { sacrificios: state.sacrificios.map((x) => ({ estigma: x.estigma, dia: x.dia })), finalFeito: !!state.finalFeito };
+  setTimeout(() => OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: c }, { destination: "ALL" }).catch(() => {}), 700); // depois do estado chegar
+}
+function relogioAcao(acao) {
+  const r = state.relogio; const agora = Date.now(); const min = 60000;
+  if (acao === "iniciar") {
+    const m = clamp(num(ui.rMin) || 30, 1, 600); const rotulo = ROTULOS.includes(ui.rRot) ? ui.rRot : ROTULOS[0];
+    state.relogio = { id: uid(), total: m * min, fim: agora + m * min, rotulo };
+    addEvent(`⏳ Relógio do sacrifício: ${m} min ${rotulo}.`); announce(`⏳ ${m} minutos ${rotulo}.`);
+  } else if (!r) return;
+  else if (acao === "mais") { r.total += 5 * min; if (r.pausa != null) r.pausa += 5 * min; else r.fim = Math.max(r.fim, agora) + 5 * min; }
+  else if (acao === "pausa") { if (r.pausa != null) { r.fim = agora + r.pausa; delete r.pausa; } else r.pausa = Math.max(0, r.fim - agora); }
+  else if (acao === "parar") state.relogio = null;
+  save();
+}
+function relogioTexto() {
+  const r = relogioDe(state);
+  if (!r) return `<span class="muted">Relógio parado.</span>`;
+  return `<b class="${r.acabou ? "acabou" : r.restante < 60000 ? "urgente" : ""}">⏳ ${r.acabou ? "A hora chegou" : mmss(r.restante)}</b> <span class="muted">${esc(r.rotulo)}${r.pausado ? " · pausado" : ""}</span>
+    <div class="relo-barra"><i style="width:${(r.frac * 100).toFixed(1)}%"></i></div>`;
+}
+function ritmoCard() {
+  const op = ritmoOp(state); const r = state.relogio;
+  return `<section class="card ritmo"><h3>Ritmo do ritual <span class="muted small">velas e relógio</span></h3>
+    ${velasHTML(state, { w: 30, h: 60 })}
+    <div class="relo-app" data-relogio>${relogioTexto()}</div>
+    ${isGM() ? `<details class="ritmo-gm" data-keep="rGM" ${ui.rGM ? "open" : ""}><summary>Controles do mestre</summary>
+      <div class="grid2"><label>Minutos <input type="number" id="rMin" min="1" max="600" value="${esc(ui.rMin || 30)}"></label>
+        <label>Contagem <select id="rRot">${ROTULOS.map((t) => `<option ${t === (ui.rRot || ROTULOS[0]) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label></div>
+      <div class="row"><button class="primary" data-relogio-acao="iniciar">${r ? "↻ Recomeçar" : "▶ Iniciar relógio"}</button>
+        ${r ? `<button data-relogio-acao="mais">+5 min</button><button data-relogio-acao="pausa">${r.pausa != null ? "▶ Retomar" : "⏸ Pausar"}</button><button class="danger" data-relogio-acao="parar">■ Parar</button>` : ""}</div>
+      <label class="check"><input type="checkbox" data-ritmoop="hud" ${op.hud ? "checked" : ""}> Relógio e velas na tela de todos</label>
+      <label class="check"><input type="checkbox" data-ritmoop="noite" ${op.noite ? "checked" : ""}> Escurecer o mapa à noite (vermelho na Lua de Sangue)</label>
+      <label class="check"><input type="checkbox" data-ritmoop="cartao" ${op.cartao ? "checked" : ""}> Cartão de abertura ao amanhecer e ao anoitecer</label>
+      <button class="ghost" id="btnCartao">🎬 Mostrar o cartão de agora para todos</button>
+    </details>` : ""}
+    <details class="ritmo-meu" data-keep="rMeu" ${ui.rMeu ? "open" : ""}><summary>Na minha tela</summary>
+      <label class="check"><input type="checkbox" data-meu="hud" ${pref.hud() ? "checked" : ""} ${op.hud ? "" : "disabled"}> Mostrar o relógio sobre o mapa${op.hud ? "" : " (o mestre desligou)"}</label>
+      <label class="inline">Posição <select data-meu="pos">${[["topo", "No topo"], ["direita", "No canto direito"], ["baixo", "Embaixo"]].map(([v, t]) => `<option value="${v}" ${pref.pos() === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label class="check"><input type="checkbox" data-meu="calmo" ${pref.calmo() ? "checked" : ""}> Reduzir efeitos (sem animações e transições fortes)</label>
+    </details>
+  </section>`;
 }
 function sacrificioFinal() {
   const vivos = aliveMembers();
@@ -1165,6 +1214,7 @@ function tabRitual() {
       ${isGM() ? `<button class="primary" id="btnFase">${state.fase < 2 ? `Avançar para ${FASES[state.fase + 1]}` : state.dia < 6 ? `Amanhecer: dia ${state.dia + 1}` : "Último dia"}</button>` : ""}
     </div>
   </section>
+  ${ritmoCard()}
 
   <section class="card stats">
     <div><b>${state.sacrificios.length}/6</b><span>sacrifícios</span></div>
@@ -1953,7 +2003,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.14.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.15.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2132,7 +2182,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.14.0", location.href).href;
+  const url = new URL("quadro.html?v=2.15.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2345,6 +2395,24 @@ async function onArquivoChange(e) {
   }
 }
 app.addEventListener("click", wrapGM(onArquivoClick));
+// Ritmo do ritual (v2.15)
+app.addEventListener("click", wrapGM((e) => {
+  const b = e.target.closest?.("button"); if (!b) return;
+  if (b.dataset.relogioAcao && isGM()) { relogioAcao(b.dataset.relogioAcao); return; }
+  if (b.id === "btnCartao" && isGM()) { enviarCartao(state.fase === 2 ? "noite" : "dia", true); toast("Cartão enviado para a mesa."); }
+}));
+app.addEventListener("change", (e) => {
+  const el = e.target;
+  if (el.id === "rMin") { ui.rMin = el.value; return; }
+  if (el.id === "rRot") { ui.rRot = el.value; return; }
+  if (el.dataset?.ritmoop && isGM()) { beginAction("Ritmo do ritual"); (state.ritmo ||= {})[el.dataset.ritmoop] = el.checked; save(); endAction(); return; }
+  const k = el.dataset?.meu; if (!k) return;
+  if (k === "hud") pref.setHud(el.checked);
+  if (k === "pos") pref.setPos(el.value);
+  if (k === "calmo") { pref.setCalmo(el.checked); document.body.classList.toggle("calmo", el.checked); }
+});
+setInterval(() => { const el = document.querySelector("[data-relogio]"); if (el && state.relogio) el.innerHTML = relogioTexto(); }, 1000);
+{ const st = document.createElement("style"); st.textContent = VELAS_CSS; document.head.appendChild(st); document.body.classList.toggle("calmo", pref.calmo()); }
 app.addEventListener("toggle", (e) => { const k = e.target.dataset?.keep; if (k) ui[k] = e.target.open; }, true);
 app.addEventListener("change", onArquivoChange);
 app.addEventListener("input", (e) => {

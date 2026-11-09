@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hexatombe — abertura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow:wght@400;500&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; color: #f0e9ea; font: 16px/1.5 Barlow, system-ui, sans-serif; cursor: pointer; }
+    #veu { position: fixed; inset: 0; opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(ellipse at 50% 45%, rgba(20,10,12,.82), rgba(4,2,3,.97) 70%); }
+    body.dia #veu { background: radial-gradient(ellipse at 50% 30%, rgba(70,40,28,.75), rgba(12,6,6,.97) 70%); }
+    body.lua #veu { background: radial-gradient(circle at 50% 30%, rgba(120,0,18,.85), rgba(14,0,3,.97) 65%); }
+    body.on #veu { opacity: 1; }
+    body.sai #veu, body.sai main { opacity: 0 !important; transition: opacity 1.1s ease; }
+    main { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 10px; }
+    .astro { width: 120px; height: 120px; border-radius: 50%; margin-bottom: 6px; opacity: 0; transform: translateY(40px) scale(.9); transition: all 2.2s cubic-bezier(.2,.7,.2,1) .2s; }
+    body.dia .astro { background: radial-gradient(circle at 50% 50%, #ffe2a3, #e08a3c 55%, rgba(224,138,60,0) 72%); box-shadow: 0 0 80px 20px rgba(224,138,60,.25); }
+    body.noite .astro { background: radial-gradient(circle at 38% 38%, #f3f0e6, #b9b4a6 55%, #8b877c 70%, rgba(0,0,0,0) 72%); box-shadow: 0 0 70px 10px rgba(220,220,255,.12); }
+    body.lua .astro { background: radial-gradient(circle at 38% 38%, #ff8a8a, #b0001a 55%, #5a0010 70%, rgba(0,0,0,0) 72%); box-shadow: 0 0 110px 30px rgba(200,16,46,.45); }
+    body.on .astro { opacity: 1; transform: none; }
+    .kicker { font: 600 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .5em; color: #d9a3ab; opacity: 0; transition: opacity 1s ease .8s; }
+    body.lua .kicker { color: #ff7b8b; }
+    h1 { font: 900 clamp(40px, 9vw, 112px)/1 Cinzel, serif; margin: 0; letter-spacing: .5em; text-indent: .5em; opacity: 0; filter: blur(8px);
+      transition: letter-spacing 2.6s cubic-bezier(.2,.7,.2,1) 1s, text-indent 2.6s cubic-bezier(.2,.7,.2,1) 1s, opacity 1.6s ease 1s, filter 1.8s ease 1s; text-shadow: 0 0 30px rgba(200,16,46,.35); }
+    body.lua h1 { color: #ff2a44; text-shadow: 0 0 40px rgba(255,0,40,.7); }
+    body.on h1 { letter-spacing: .12em; text-indent: .12em; opacity: 1; filter: none; }
+    .sub { font: 700 15px/1 Cinzel, serif; letter-spacing: .3em; color: #c9b8ba; text-transform: uppercase; opacity: 0; transition: opacity 1.2s ease 2.2s; }
+    .linha { width: 0; height: 1px; background: linear-gradient(90deg, transparent, #c8102e, transparent); transition: width 1.6s ease 2.4s; margin: 6px 0; }
+    body.on .linha { width: min(420px, 70vw); }
+    .frase { max-width: 560px; font-size: 18px; font-style: italic; color: #e6d8da; min-height: 2.6em; }
+    .frase span { opacity: 0; transition: opacity .5s ease; }
+    .frase span.v { opacity: 1; }
+    .info { font: 500 14px/1 "Barlow Condensed", sans-serif; letter-spacing: .18em; text-transform: uppercase; color: #a8979a; opacity: 0; transition: opacity 1s ease; }
+    body.on .kicker, body.on .sub { opacity: 1; }
+    body.mostra-info .info, body.mostra-info .velas-box { opacity: 1; }
+    .velas-box { opacity: 0; transition: opacity 1.2s ease; margin-top: 14px; }
+    .dica { position: fixed; bottom: 18px; width: 100%; text-align: center; font-size: 12px; color: #7d6e70; letter-spacing: .1em; opacity: 0; transition: opacity 1s ease 3s; }
+    body.on .dica { opacity: 1; }
+    /* reduzir efeitos: tudo aparece sem movimento */
+    body.calmo * { transition-duration: .3s !important; transition-delay: 0s !important; animation: none !important; filter: none !important; }
+    body.calmo h1 { letter-spacing: .12em; text-indent: .12em; }
+  </style>
+  <style id="vcss"></style>
+</head>
+<body>
+  <div id="veu"></div>
+  <main>
+    <div class="astro"></div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="titulo"></h1>
+    <div class="sub" id="sub"></div>
+    <div class="linha"></div>
+    <div class="frase" id="frase"></div>
+    <div class="info" id="info"></div>
+    <div class="velas-box" id="velas"></div>
+  </main>
+  <div class="dica">clique para fechar</div>
+  <script type="module" src="cartao.js?v=2.15.0"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hexatombe — relógio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; background: transparent; overflow: hidden; color: #f0e9ea; font: 13px/1.2 "Barlow Condensed", system-ui, sans-serif; user-select: none; }
+    .hud { margin: 4px; padding: 7px 10px 8px; border-radius: 12px; background: rgba(14, 9, 11, .88); border: 1px solid #3a2a2e;
+      box-shadow: 0 6px 22px rgba(0,0,0,.55), inset 0 0 18px rgba(200,16,46,.06); transition: box-shadow 1s ease, border-color 1s ease; }
+    .hud.noite { background: rgba(6, 8, 18, .9); border-color: #263052; }
+    .hud.lua { background: rgba(26, 2, 6, .92); border-color: #7a0b1e; box-shadow: 0 6px 26px rgba(0,0,0,.6), 0 0 22px rgba(200,16,46,.35); }
+    .topo { display: flex; align-items: center; gap: 6px; }
+    .astro { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+    .dia .astro { background: radial-gradient(circle, #ffe2a3, #e08a3c 70%); box-shadow: 0 0 8px rgba(224,138,60,.6); }
+    .noite .astro { background: radial-gradient(circle at 38% 38%, #f3f0e6, #8b877c 75%); box-shadow: 0 0 8px rgba(220,220,255,.3); }
+    .lua .astro { background: radial-gradient(circle at 38% 38%, #ff8a8a, #b0001a 75%); box-shadow: 0 0 10px rgba(255,0,40,.8); }
+    .titulo { font: 700 12px/1 Cinzel, serif; letter-spacing: .14em; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lua .titulo { color: #ff4a5e; }
+    .bt { background: none; border: 0; color: #8f7f82; cursor: pointer; font: 600 12px/1 "Barlow Condensed", sans-serif; padding: 2px 3px; border-radius: 4px; }
+    .bt:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .velas-wrap { margin: 5px 0 3px; }
+    .relo { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+    .pavio { position: relative; flex: 1; height: 6px; border-radius: 3px; background: #2a1d20; overflow: visible; }
+    .pavio i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #6b0f1d, #c8102e); transition: width 1s linear; }
+    .pavio b { position: absolute; top: -4px; width: 8px; height: 14px; margin-left: -4px; border-radius: 50% 50% 45% 45%; background: radial-gradient(circle at 50% 70%, #fff6dc, #ffd27a 40%, #e2462f 75%, transparent 78%);
+      animation: brasa .5s ease-in-out infinite alternate; transition: left 1s linear; }
+    @keyframes brasa { from { transform: scale(.85) } to { transform: scale(1.1) } }
+    .tempo { font: 700 15px/1 Cinzel, serif; min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+    .rot { font-size: 11px; color: #a8979a; letter-spacing: .06em; margin-top: 3px; text-align: center; text-transform: uppercase; }
+    .urgente .tempo { color: #ff4a5e; animation: bate 1s ease-in-out infinite; }
+    .urgente .pavio i { background: #ff2a44; }
+    .acabou .tempo { color: #ff2a44; }
+    .acabou .rot { color: #ff7b8b; animation: bate 1.2s ease-in-out infinite; }
+    @keyframes bate { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
+    .pausado .pavio b { animation: none; opacity: .4; }
+    .fases { display: flex; gap: 3px; margin-top: 4px; }
+    .fases span { flex: 1; text-align: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 0; border-radius: 3px; background: #1f1518; color: #6e5f62; }
+    .fases span.feito { color: #a8979a; }
+    .fases span.on { background: #c8102e; color: #fff; }
+    .noite .fases span.on { background: #2b3a78; }
+    .lua .fases span.on { background: #b0001a; }
+    .vazio { color: #8f7f82; text-align: center; padding: 8px 0; }
+    .calmo .pavio b, .calmo .tempo, .calmo .rot { animation: none !important; }
+  </style>
+  <style id="vcss"></style>
+</head>
+<body>
+  <div class="hud" id="hud"><div class="vazio">Preparando o ritual…</div></div>
+  <script type="module" src="relogio.js?v=2.15.0"></script>
+</body>
+</html>
