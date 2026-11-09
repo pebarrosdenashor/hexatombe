@@ -1,11 +1,11 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.16.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.16.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.16.0";
-import * as PM from "./prato-mestre.js?v=2.16.0";
-import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.16.0";
-import { ROTULOS, velasHTML, VELAS_CSS, relogio as relogioDe, mmss, cartaoDe, pref, opcoes as ritmoOp } from "./ritmo.js?v=2.16.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.16.0";
+import * as IMG from "./imagens.js?v=2.17.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.17.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.17.0";
+import * as PM from "./prato-mestre.js?v=2.17.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.17.0";
+import { ROTULOS, velasHTML, VELAS_CSS, relogio as relogioDe, mmss, cartaoDe, pref, opcoes as ritmoOp } from "./ritmo.js?v=2.17.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.17.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -1505,20 +1505,20 @@ function tabExplorar() {
   </section>`;
 }
 
-/* ---------- Batalha de intenções (v2.16): jogador × jogador, jogador × NPC, NPC × NPC ---------- */
-// Cada lado é uma referência: "m:<integrante>", "npc:<NPC sem equipe>" ou "ficha:<ficha sem equipe>"
-function lutadorOpcoes(sel = "") {
-  const o = (v, t) => `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(t)}</option>`;
-  let h = `<option value="">—</option>`;
-  for (const t of state.equipes) {
-    const ms = t.membros.filter((m) => m.vivo); if (!ms.length) continue;
-    h += `<optgroup label="${esc(t.nome)}">${ms.map((m) => o("m:" + m.id, `${m.npcId ? "◆ " : "👤 "}${mName(m)}${m.sac ? " ✠" : ""}`)).join("")}</optgroup>`;
-  }
-  const livres = npcsLivres().filter((c) => !(num(c.pv) > 0 && num(c.pvAtual) <= 0 && c.pvAtual !== ""));
-  if (livres.length) h += `<optgroup label="NPCs sem equipe">${livres.map((c) => o("npc:" + c.id, "◆ " + (c.nome || "?"))).join("")}</optgroup>`;
+/* ---------- Batalha de intenções (v2.17): dois lados montados pelo mestre ----------
+   Cada lado tem um nome e quantos combatentes o mestre quiser (mínimo 1): integrantes das equipes,
+   NPCs sem equipe ou fichas sem equipe, misturados como preferir.
+   Referências: "m:<integrante>", "npc:<NPC sem equipe>", "ficha:<ficha sem equipe>" */
+const BAT_FRASE = "Suas intenções entram em um conflito. Lute por elas.";
+function lutadorOpcoes(sel = "", fora = new Set()) {
+  const o = (v, t) => fora.has(v) ? "" : `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(t)}</option>`;
+  const grupo = (rot, itens) => { const h = itens.join(""); return h ? `<optgroup label="${esc(rot)}">${h}</optgroup>` : ""; };
+  let h = `<option value="">— escolher combatente —</option>`;
+  for (const t of state.equipes) h += grupo(t.nome, t.membros.filter((m) => m.vivo).map((m) => o("m:" + m.id, `${m.npcId ? "◆ " : "👤 "}${mName(m)}${m.sac ? " ✠" : ""}`)));
+  const livres = npcsLivres().filter((c) => !(num(c.pv) > 0 && c.pvAtual !== "" && num(c.pvAtual) <= 0));
+  h += grupo("NPCs sem equipe", livres.map((c) => o("npc:" + c.id, "◆ " + (c.nome || "?"))));
   const usadas = new Set(allMembers().map((x) => x.m.sheetId).filter(Boolean));
-  const soltas = visibleSheets().filter(({ s }) => !usadas.has(s.id));
-  if (soltas.length) h += `<optgroup label="Fichas sem equipe">${soltas.map(({ s }) => o("ficha:" + s.id, "👤 " + (s.header?.personagem || "?"))).join("")}</optgroup>`;
+  h += grupo("Fichas sem equipe", visibleSheets().filter(({ s }) => !usadas.has(s.id)).map(({ s }) => o("ficha:" + s.id, "👤 " + (s.header?.personagem || "?"))));
   return h;
 }
 function lutador(ref) {
@@ -1542,61 +1542,98 @@ function pvDe(L) {
   if (L.npc) { npcPv(L.npc); return num(L.npc.pv) > 0 ? [num(L.npc.pvAtual), num(L.npc.pv)] : null; }
   const sh = L.sheetId && getSheet(L.sheetId); return sh?.pv ? [num(sh.pv.atual), num(sh.pv.max)] : null;
 }
-function iniciarBatalha() {
-  const a = val("bA"), c = val("bB");
-  if (!a || !c || a === c) return toast("Escolha dois combatentes diferentes.");
-  const A = lutador(a), B = lutador(c); if (!A || !B) return toast("Não encontrei um dos combatentes.");
-  const vermelho = ui.bVerm !== false, cartao = ui.bCart !== false;
-  state.batalha = { id: uid(), a, b: c, nomes: [A.nome, B.nome], tipos: [A.npc ? "npc" : "jogador", B.npc ? "npc" : "jogador"], vermelho, inicio: Date.now() };
-  marcarRival(A, B.nome); marcarRival(B, A.nome);
-  const txt = `⚔ Batalha de intenções: ${A.nome} contra ${B.nome}.`; addEvent(txt); announce(txt); save();
-  if (cartao && obrOk) setTimeout(() => OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: {
-    evt: "batalha", dia: state.dia, lua: true, kicker: "A COROA EXIGE", titulo: "BATALHA", sub: "de intenções",
-    frase: `${A.nome} contra ${B.nome}. As intenções se chocam, e só o sangue do rival as acalma.`,
-    info: "+1d10 de dano no rival · metade de qualquer outro dano" } }, { destination: "ALL" }).catch(() => {}), 700);
+// rascunho da montagem (só na janela do mestre)
+function batMonta() {
+  ui.batMonta ||= { lados: [{ nome: "", refs: [] }, { nome: "", refs: [] }] };
+  return ui.batMonta;
 }
-function encerrarBatalha() {
-  const bt = batalhaAtual(); if (!bt) { state.batalha = null; return save(); }
-  marcarRival(lutador(bt.a), null); marcarRival(lutador(bt.b), null);
-  state.batalha = null; addEvent(`A batalha de intenções entre ${bt.nomes[0]} e ${bt.nomes[1]} terminou.`); announce("⚔ A batalha de intenções terminou."); save();
-}
+const nomeLado = (l, i) => (String(l.nome || "").trim() || `Lado ${i + 1}`);
+const ladoTexto = (l) => `${l.nome} (${l.nomes.join(", ")})`;
+// batalha atual sempre no formato novo (converte as antigas)
 function batalhaAtual() {
   const b = state.batalha; if (!b) return null;
-  if (Array.isArray(b)) { // formato antigo: [integrante, integrante]
+  if (Array.isArray(b)) {
     const A = lutador("m:" + b[0]), B = lutador("m:" + b[1]);
-    return { id: "antiga", a: "m:" + b[0], b: "m:" + b[1], nomes: [A?.nome || "?", B?.nome || "?"], tipos: [A?.npc ? "npc" : "jogador", B?.npc ? "npc" : "jogador"], vermelho: false };
+    return { id: "antiga", vermelho: false, lados: [{ nome: A?.nome || "?", refs: ["m:" + b[0]], nomes: [A?.nome || "?"], tipos: [A?.npc ? "npc" : "jogador"] }, { nome: B?.nome || "?", refs: ["m:" + b[1]], nomes: [B?.nome || "?"], tipos: [B?.npc ? "npc" : "jogador"] }] };
+  }
+  if (!b.lados && b.a) {
+    return { ...b, lados: [0, 1].map((i) => ({ nome: b.nomes?.[i] || "?", refs: [i ? b.b : b.a], nomes: [b.nomes?.[i] || "?"], tipos: [b.tipos?.[i] || "jogador"] })) };
   }
   return b;
 }
-function rolarIntencao(lado) {
+function cartaoBatalha(bt) {
+  return { evt: "batalha", dia: state.dia, lua: true, kicker: "A COROA EXIGE UMA", titulo: "BATALHA", sub: "de intenções", frase: BAT_FRASE,
+    info: `${bt.lados[0].nome} · ${bt.lados[0].refs.length} contra ${bt.lados[1].refs.length} · ${bt.lados[1].nome}` };
+}
+function enviarCartaoBatalha(bt) {
+  if (!obrOk || !bt) return;
+  setTimeout(() => OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: cartaoBatalha(bt) }, { destination: "ALL" }).catch(() => {}), 700);
+}
+function iniciarBatalha() {
+  const mt = batMonta();
+  for (let i = 0; i < 2; i++) if (!mt.lados[i].refs.length) return toast(`Coloque pelo menos um combatente em ${nomeLado(mt.lados[i], i)}.`);
+  const lados = mt.lados.map((l, i) => {
+    const Ls = l.refs.map(lutador).filter(Boolean);
+    return { nome: nomeLado(l, i), refs: Ls.map((L) => L.ref), nomes: Ls.map((L) => L.nome), tipos: Ls.map((L) => (L.npc ? "npc" : "jogador")) };
+  });
+  if (lados.some((l) => !l.refs.length)) return toast("Algum combatente não foi encontrado. Confira os lados.");
+  const bt = { id: uid(), lados, vermelho: ui.bVerm !== false, inicio: Date.now() };
+  state.batalha = bt;
+  for (let i = 0; i < 2; i++) for (const ref of lados[i].refs) marcarRival(lutador(ref), ladoTexto(lados[1 - i]));
+  const txt = `⚔ Batalha de intenções: ${ladoTexto(lados[0])} contra ${ladoTexto(lados[1])}.`; addEvent(txt); announce(txt); save();
+  if (ui.bCart !== false) enviarCartaoBatalha(bt);
+  ui.batMonta = null;
+}
+function encerrarBatalha() {
+  const bt = batalhaAtual(); state.batalha = null;
+  if (bt) {
+    for (const l of bt.lados) for (const ref of l.refs) marcarRival(lutador(ref), null);
+    addEvent(`A batalha de intenções entre ${bt.lados[0].nome} e ${bt.lados[1].nome} terminou.`); announce("⚔ A batalha de intenções terminou.");
+  }
+  save();
+}
+function rolarIntencao(lado, k) {
   const bt = batalhaAtual(); if (!bt) return;
-  const atk = bt.nomes[lado], alvo = bt.nomes[1 - lado];
+  const atk = bt.lados[lado]?.nomes[k]; if (!atk) return;
   const r = rollExpr("1d10");
-  announce(`⚔ ${atk} fere ${alvo} com a intenção: +${r.total} de dano (1d10).`);
+  announce(`⚔ ${atk} (${bt.lados[lado].nome}) fere ${bt.lados[1 - lado].nome} com a intenção: +${r.total} de dano (1d10).`);
 }
 function batalhaBanner() {
   const bt = batalhaAtual(); if (!bt) return "";
-  return `<div class="banner blood batalha-banner"><b>⚔ BATALHA DE INTENÇÕES</b><span><b>${esc(bt.nomes[0])}</b> contra <b>${esc(bt.nomes[1])}</b> — cada um causa +1d10 de dano no rival e sofre metade de qualquer dano que não venha dele.</span></div>`;
+  const lado = (l) => `<b>${esc(l.nome)}</b> <span class="bat-quem">(${l.nomes.map(esc).join(", ")})</span>`;
+  return `<div class="banner blood batalha-banner"><b>⚔ BATALHA DE INTENÇÕES</b><span>${lado(bt.lados[0])} contra ${lado(bt.lados[1])} — cada combatente causa +1d10 de dano no lado rival e sofre metade de qualquer dano que não venha dele.</span></div>`;
 }
 function batalhaCard() {
   const bt = batalhaAtual();
-  const intro = `<p class="muted">Duelo forçado entre dois combatentes — jogador contra jogador, jogador contra NPC ou NPC contra NPC: cada um causa +1d10 de dano no outro e sofre metade de qualquer dano que não venha do rival.</p>`;
+  const intro = `<p class="muted">Monte dois lados com quem você quiser — jogadores, NPCs ou os dois, de qualquer equipe do Hexatombe, no mínimo um em cada lado. Cada combatente causa +1d10 de dano no lado rival e sofre metade de qualquer dano que não venha dele.</p>`;
   if (!bt) {
     if (!isGM()) return `<section class="card"><h3>Batalha de intenções</h3>${intro}<p class="muted">Nenhuma batalha agora.</p></section>`;
-    return `<section class="card batalha"><h3>Batalha de intenções</h3>${intro}
-      <div class="bat-sel"><select id="bA">${lutadorOpcoes(ui.bA)}</select><span class="bat-x">⚔</span><select id="bB">${lutadorOpcoes(ui.bB)}</select></div>
-      <p class="muted small">👤 ficha de jogador · ◆ NPC</p>
+    const mt = batMonta(); const usados = new Set(mt.lados.flatMap((l) => l.refs));
+    const lado = (l, i) => `<div class="bat-lado monta">
+      <input data-batnome="${i}" value="${esc(l.nome)}" placeholder="Lado ${i + 1}" aria-label="Nome do lado ${i + 1}" class="bat-nomein">
+      <ul class="bat-lista">${l.refs.map((ref, k) => { const L = lutador(ref); return `<li><span>${L?.npc ? "◆" : "👤"} ${esc(L?.nome || "?")}${L?.equipe ? ` <small>${esc(L.equipe)}</small>` : ""}</span><button class="icon danger" data-battira="${i}|${k}" title="Tirar do lado">✕</button></li>`; }).join("") || `<li class="muted small">Ninguém ainda.</li>`}</ul>
+      <select data-batadd="${i}">${lutadorOpcoes("", usados)}</select>
+      <select data-bateq="${i}"><option value="">+ equipe inteira do Hexatombe…</option>${state.equipes.map((t, ti) => (t.membros.some((m) => m.vivo && !usados.has("m:" + m.id)) ? `<option value="${ti}">${esc(t.nome)}</option>` : "")).join("")}</select>
+      <span class="muted small">${l.refs.length} ${l.refs.length === 1 ? "combatente" : "combatentes"}</span></div>`;
+    const pronto = mt.lados.every((l) => l.refs.length);
+    return `<section class="card batalha"><h3>Batalha de intenções <span class="muted small">montar os lados</span></h3>${intro}
+      <div class="bat-arena">${lado(mt.lados[0], 0)}<span class="bat-x">⚔</span>${lado(mt.lados[1], 1)}</div>
+      <p class="muted small">👤 ficha de jogador · ◆ NPC · cada pessoa só pode estar em um lado</p>
       <label class="check"><input type="checkbox" id="bVerm" ${ui.bVerm !== false ? "checked" : ""}> 🩸 Tela avermelhada para todos (como na Lua de Sangue)</label>
-      <label class="check"><input type="checkbox" id="bCart" ${ui.bCart !== false ? "checked" : ""}> 🎬 Cartão de abertura da batalha</label>
-      <button class="primary" id="btnBat">⚔ Iniciar batalha</button></section>`;
+      <label class="check"><input type="checkbox" id="bCart" ${ui.bCart !== false ? "checked" : ""}> 🎬 Cartão de abertura: “A Coroa exige uma BATALHA de intenções”</label>
+      <div class="row"><button class="primary" id="btnBat" ${pronto ? "" : "disabled"}>⚔ Iniciar batalha</button><button class="ghost" id="btnBatLimpa">Limpar os lados</button></div></section>`;
   }
   const lado = (i) => {
-    const L = lutador(i ? bt.b : bt.a); const pv = pvDe(L); const sofre = ui["batDano" + i];
-    return `<div class="bat-lado"><span class="bat-tipo">${bt.tipos?.[i] === "npc" ? "◆ NPC" : "👤 Jogador"}${L?.equipe ? ` · ${esc(L.equipe)}` : ""}</span>
-      <b class="bat-nome">${esc(bt.nomes[i])}</b>
-      ${pv ? `<span class="bat-pv">PV ${pv[0]}/${pv[1]}<span class="mbar"><i style="width:${pv[1] ? clamp(Math.round(100 * pv[0] / pv[1]), 0, 100) : 0}%"></i></span></span>` : ""}
-      ${isGM() ? `<button class="primary" data-batroll="${i}">🎲 +1d10 em ${esc(bt.nomes[1 - i])}</button>
-      <label>Dano de fora <input type="number" min="0" data-batdano="${i}" value="${esc(sofre ?? "")}" placeholder="0"></label>
+    const l = bt.lados[i]; const sofre = ui["batDano" + i];
+    const linhas = l.refs.map((ref, k) => {
+      const L = lutador(ref); const pv = pvDe(L); const nome = L?.nome || l.nomes[k];
+      return `<li><div class="bat-com"><span>${l.tipos[k] === "npc" ? "◆" : "👤"} <b>${esc(nome)}</b></span>
+        ${pv ? `<span class="bat-pv">PV ${pv[0]}/${pv[1]}<span class="mbar"><i style="width:${pv[1] ? clamp(Math.round(100 * pv[0] / pv[1]), 0, 100) : 0}%"></i></span></span>` : ""}</div>
+        ${isGM() ? `<button class="primary" data-batroll="${i}|${k}" title="Dano extra da intenção contra ${esc(bt.lados[1 - i].nome)}">🎲 +1d10</button>` : ""}</li>`;
+    }).join("");
+    return `<div class="bat-lado"><b class="bat-nome">${esc(l.nome)}</b><span class="bat-tipo">${l.refs.length} ${l.refs.length === 1 ? "combatente" : "combatentes"}</span>
+      <ul class="bat-lista on">${linhas}</ul>
+      ${isGM() ? `<label>Dano de fora <input type="number" min="0" data-batdano="${i}" value="${esc(sofre ?? "")}" placeholder="0"></label>
       <span class="muted small" data-batmeio="${i}">${num(sofre) ? `sofre só ${Math.floor(num(sofre) / 2)}` : "sofre metade"}</span>` : ""}</div>`;
   };
   return `<section class="card batalha on"><h3>Batalha de intenções <span class="muted small">em andamento</span></h3>
@@ -1867,7 +1904,9 @@ function onClick(e) {
   }
   if (b.id === "btnBat") return iniciarBatalha();
   if (b.id === "btnBatEnd") return encerrarBatalha();
-  if (d.batroll !== undefined) return rolarIntencao(num(d.batroll));
+  if (d.batroll !== undefined) { const [i, k] = d.batroll.split("|").map(num); return rolarIntencao(i, k); }
+  if (d.battira !== undefined) { const [i, k] = d.battira.split("|").map(num); batMonta().lados[i].refs.splice(k, 1); render(); return; }
+  if (b.id === "btnBatLimpa") { ui.batMonta = null; render(); return; }
   if (b.id === "btnDardosReset") { state.circo.dardos = []; save(); return; }
   if (b.id === "btnSocoReset") { state.circo.soco = []; save(); return; }
   if (b.id === "btnUndoH") return undoAction();
@@ -2094,7 +2133,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.16.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.17.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2273,7 +2312,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.16.0", location.href).href;
+  const url = new URL("quadro.html?v=2.17.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2490,7 +2529,7 @@ app.addEventListener("click", wrapGM(onArquivoClick));
 app.addEventListener("click", wrapGM((e) => {
   const b = e.target.closest?.("button"); if (!b) return;
   if (b.dataset.relogioAcao && isGM()) { relogioAcao(b.dataset.relogioAcao); return; }
-  if (b.id === "btnBatCart" && isGM()) { const bt = batalhaAtual(); if (bt && obrOk) OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: { evt: "batalha", dia: state.dia, lua: true, kicker: "A COROA EXIGE", titulo: "BATALHA", sub: "de intenções", frase: `${bt.nomes[0]} contra ${bt.nomes[1]}. As intenções se chocam, e só o sangue do rival as acalma.`, info: "+1d10 de dano no rival · metade de qualquer outro dano" } }, { destination: "ALL" }).catch(() => {}); return; }
+  if (b.id === "btnBatCart" && isGM()) { enviarCartaoBatalha(batalhaAtual()); return; }
   if (b.id === "btnCartao" && isGM()) { enviarCartao(state.fase === 2 ? "noite" : "dia", true); toast("Cartão enviado para a mesa."); }
 }));
 app.addEventListener("input", (e) => {
@@ -2500,9 +2539,16 @@ app.addEventListener("input", (e) => {
 });
 app.addEventListener("change", (e) => {
   const el = e.target;
-  if (el.id === "bA" || el.id === "bB") { ui[el.id] = el.value; return; }
+  if (el.dataset?.batadd !== undefined && el.value) { const l = batMonta().lados[num(el.dataset.batadd)]; if (!batMonta().lados.some((x) => x.refs.includes(el.value))) l.refs.push(el.value); render(); return; }
+  if (el.dataset?.bateq !== undefined && el.value !== "") {
+    const mt = batMonta(); const usados = new Set(mt.lados.flatMap((x) => x.refs)); const t = state.equipes[num(el.value)]; const l = mt.lados[num(el.dataset.bateq)];
+    for (const m of t.membros) if (m.vivo && !usados.has("m:" + m.id)) l.refs.push("m:" + m.id);
+    if (!String(l.nome || "").trim()) l.nome = t.nome;
+    render(); return;
+  }
+  if (el.dataset?.batnome !== undefined) { batMonta().lados[num(el.dataset.batnome)].nome = el.value.slice(0, 40); return; }
   if (el.id === "bVerm" || el.id === "bCart") { ui[el.id] = el.checked; return; }
-  if (el.id === "bVermOn" && isGM() && state.batalha && !Array.isArray(state.batalha)) { beginAction("Tela avermelhada"); state.batalha.vermelho = el.checked; save(); endAction(); return; }
+  if (el.id === "bVermOn" && isGM() && state.batalha && !Array.isArray(state.batalha) && state.batalha.lados) { beginAction("Tela avermelhada"); state.batalha.vermelho = el.checked; save(); endAction(); return; }
   if (el.id === "rMin") { ui.rMin = el.value; return; }
   if (el.id === "rRot") { ui.rRot = el.value; return; }
   if (el.dataset?.ritmoop && isGM()) { beginAction("Ritmo do ritual"); (state.ritmo ||= {})[el.dataset.ritmoop] = el.checked; save(); endAction(); return; }

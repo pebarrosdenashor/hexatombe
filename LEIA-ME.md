@@ -198,3 +198,10 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - Ao iniciar, o mestre escolhe **🩸 Tela avermelhada para todos** (o mapa fica vermelho e pulsa devagar, como na Lua de Sangue) e o **🎬 cartão de abertura** da batalha. A tela avermelhada liga/desliga durante a batalha.
 - Painel da batalha com o PV de cada lado, botão **🎲 +1d10** de intenção contra o rival e calculadora de "dano de fora" (sofre metade).
 - Todos veem a faixa da batalha na aba Ritual e no relógio da tela; a ficha do jogador e o cartão do NPC marcam contra quem a batalha é.
+
+## Novidades da versão 2.17 — batalha de intenções em dois lados
+
+- Agora a batalha é entre **dois lados** montados pelo mestre, com quantos combatentes quiser em cada um (mínimo 1). Vale misturar jogadores e NPCs de qualquer equipe do Hexatombe, NPCs sem equipe e fichas sem equipe; cada pessoa só pode estar em um lado.
+- Dá para dar nome a cada lado, trazer uma equipe inteira do Hexatombe de uma vez e tirar alguém com ✕.
+- Ao iniciar, toca o cartão "A Coroa exige uma **BATALHA** de intenções" com a frase "Suas intenções entram em um conflito. Lute por elas."
+- Durante a batalha, cada combatente tem seu botão 🎲 +1d10 contra o lado rival, e cada lado tem a calculadora de "dano de fora".

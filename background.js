@@ -1,10 +1,10 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.16.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.16.0";
-import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.16.0";
-import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.16.0";
-import { PREF, pref, opcoes, ehNoite, ehLua, relogio as relogioDe } from "./ritmo.js?v=2.16.0";
-import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.16.0";
+import * as IMG from "./imagens.js?v=2.17.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.17.0";
+import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.17.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.17.0";
+import { PREF, pref, opcoes, ehNoite, ehLua, relogio as relogioDe } from "./ritmo.js?v=2.17.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.17.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -58,7 +58,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.16.0", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.17.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
@@ -217,7 +217,7 @@ async function abrirHud() {
     : pos === "baixo" ? { a: { left: w / 2, top: h - 10 }, o: { horizontal: "CENTER", vertical: "BOTTOM" } }
     : { a: { left: w / 2, top: 10 }, o: { horizontal: "CENTER", vertical: "TOP" } };
   await OBR.popover.open({
-    id: HUD_ID, url: new URL(`relogio.html?v=2.16.0&sala=${encodeURIComponent(roomId)}`, location.href).href,
+    id: HUD_ID, url: new URL(`relogio.html?v=2.17.0&sala=${encodeURIComponent(roomId)}`, location.href).href,
     width: 270, height: 148, anchorReference: "POSITION", anchorPosition: cfg.a, anchorOrigin: cfg.o, transformOrigin: cfg.o,
     hidePaper: true, disableClickAway: true, marginThreshold: 4,
   });
@@ -236,7 +236,7 @@ async function mostrarCartao(c) {
   if (!c) return;
   try {
     localStorage.setItem(NS + ":cartao", JSON.stringify({ ...c, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/cartao", url: new URL(`cartao.html?v=2.16.0&t=${Date.now()}`, location.href).href, fullScreen: true, hideBackdrop: true, hidePaper: true });
+    await OBR.modal.open({ id: NS + "/cartao", url: new URL(`cartao.html?v=2.17.0&t=${Date.now()}`, location.href).href, fullScreen: true, hideBackdrop: true, hidePaper: true });
   } catch { /* */ }
   setTimeout(() => toque(c.evt === "batalha" ? "hora" : c.evt === "noite" ? "noite" : "dia"), pref.calmo() ? 100 : 900);
 }

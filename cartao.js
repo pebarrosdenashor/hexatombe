@@ -1,5 +1,5 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import { NS, velasHTML, VELAS_CSS, pref } from "./ritmo.js?v=2.16.0";
+import { NS, velasHTML, VELAS_CSS, pref } from "./ritmo.js?v=2.17.0";
 
 /* Cartão de abertura do dia / da noite, em tela cheia, aberto pelo fundo da extensão.
    Fecha sozinho depois de alguns segundos ou com um clique. */
