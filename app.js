@@ -1,10 +1,10 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.13.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.13.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.13.0";
-import * as PM from "./prato-mestre.js?v=2.13.0";
-import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.13.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.13.0";
+import * as IMG from "./imagens.js?v=2.14.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.14.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.14.0";
+import * as PM from "./prato-mestre.js?v=2.14.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.14.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.14.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -806,9 +806,31 @@ const bfExRow = (a = ["", ""]) => `<div class="bf-row bf-ex">
 const bfPerRow = (a = ["", ""]) => `<div class="bf-row bf-per">
   <input data-k="0" placeholder="Perícia (ex.: Furtividade)" value="${esc(a[0] || "")}"><input data-k="1" placeholder="Teste 2d20+10" value="${esc(a[1] || "")}">
   <button class="icon" data-bfroll="per" title="Rolar">🎲</button><button class="icon danger" data-bfdel title="Remover">✕</button></div>`;
-const bfHabRow = (h = { nome: "", desc: "" }) => `<div class="bf-hab">
-  <div class="row"><input data-k="nome" placeholder="Nome da habilidade (opcional)" value="${esc(h.nome || "")}"><button class="icon danger" data-bfdel title="Remover">✕</button></div>
+const bfHabRow = (h = { nome: "", desc: "" }) => `<div class="bf-hab ${h.est ? "temest" : ""}">
+  <div class="row"><input data-k="nome" placeholder="Nome da habilidade (opcional)" value="${esc(h.nome || "")}">
+    <label class="bf-est" title="Habilidade do Estigma: ao usar no Escudo do Mestre, todos veem a animação do estigma"><input type="checkbox" data-k="est" ${h.est ? "checked" : ""}> ✠ Estigma</label>
+    <button class="icon danger" data-bfdel title="Remover">✕</button></div>
   <textarea data-k="desc" rows="3" placeholder="O que ela faz — pode ter quantas linhas quiser">${esc(h.desc || "")}</textarea></div>`;
+/* ---------- Habilidade do Estigma ----------
+   Na ficha do NPC, uma habilidade pode ser marcada como a "do Estigma".
+   Ao usá-la (aqui ou no Escudo do Mestre), todos da sala veem a animação do estigma e ouvem o som. */
+const EST_NPC = ["Desejo", "Rancor", "Culpa", "Prazer", "Orgulho"]; // a Obsessão é do jogador
+const MESTRE_CH = "io.github.pebarrosdenashor.mestre-hx/msg";
+function estDoNpc(c) {
+  if (EST_NPC.includes(c?.estigma)) return c.estigma;
+  const s = c && npcMember(c.id)?.m.sac; return EST_NPC.includes(s) ? s : "";
+}
+let estAt = 0;
+function usarEstigmaNpc(id, hi) {
+  const c = state.bestiario.find((x) => x.id === id); if (!c) return;
+  const est = estDoNpc(c); if (!est) { toast("Este NPC não tem estigma: escolha na ficha (✎) ou marque o sacrifício na equipe."); return; }
+  if (Date.now() - estAt < 2000) return; estAt = Date.now();
+  const h = npcHabs(c)[hi];
+  if (!obrOk) { toast("Abra dentro do Owlbear para mostrar o estigma."); return; }
+  OBR.broadcast.sendMessage(MESTRE_CH, { kind: "estigma", e: est, n: Date.now() }, { destination: "ALL" })
+    .then(() => toast(`✠ ${c.nome} usou ${h?.nome || "a habilidade do Estigma"}: estigma ${est === "Culpa" ? "da" : "do"} ${est} na tela de todos.`))
+    .catch(() => toast("Não deu para mostrar o estigma agora."));
+}
 function npcHabs(c) { return Array.isArray(c.habs) ? c.habs : (c.hab || []).map((h) => ({ nome: "", desc: h })); }
 function bestForm(c) {
   c ||= { nome: "", tipo: "", vd: "", def: "", pv: "", maq: "", desl: "", attrs: "", per: "1d20", ini: "1d20", res: { Fortitude: "1d20", Reflexos: "1d20", Vontade: "1d20" }, pp: "", rd: "", vuln: "", hab: [], atq: [], extra: [], lore: "" };
@@ -823,22 +845,23 @@ function bestForm(c) {
     ${lista("atq", "⚔ Ataques", (c.atq || []).map(bfAtqRow).join("") || bfAtqRow(), "ataque")}
     ${lista("ex", "🎲 Outras rolagens", (c.extra || []).map(bfExRow).join(""), "rolagem")}
     ${lista("per", "Perícias", (c.pericias || []).map(bfPerRow).join(""), "perícia")}
-    ${lista("hab", "✦ Habilidades", npcHabs(c).map(bfHabRow).join(""), "habilidade")}
+    <label class="bf-estsel">✠ Estigma do sacrifício <select id="bf-estigma"><option value="">Automático (o do integrante na equipe)</option>${EST_NPC.map((n) => `<option ${c.estigma === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+    ${lista("hab", "✦ Habilidades <span class=\"muted small\">marque ✠ Estigma na habilidade que mostra o estigma para a mesa</span>", npcHabs(c).map(bfHabRow).join(""), "habilidade")}
     <label>📜 Lore <span class="muted small">(aparece embaixo do NPC)</span><textarea id="bf-lore" rows="6" placeholder="Quem é, de onde veio, o que quer, o que esconde…">${esc(c.lore || "")}</textarea></label>
     <div class="row"><button class="primary" id="btnBestSave">${ui.bestEdit ? "Salvar alterações" : "Adicionar ao bestiário"}</button>${ui.bestEdit ? `<button class="ghost" id="btnBestCancel">Cancelar</button>` : ""}</div>
   </div>`;
 }
 function bfRows(id) {
-  return [...document.querySelectorAll(`#bf-${id}-list > *`)].map((r) => Object.fromEntries([...r.querySelectorAll("[data-k]")].map((x) => [x.dataset.k, x.value.trim()])));
+  return [...document.querySelectorAll(`#bf-${id}-list > *`)].map((r) => Object.fromEntries([...r.querySelectorAll("[data-k]")].map((x) => [x.dataset.k, x.type === "checkbox" ? (x.checked ? "1" : "") : x.value.trim()])));
 }
 function bestFromForm() {
   const v = (id) => (document.getElementById("bf-" + id)?.value || "").trim();
   const nome = v("nome"); if (!nome) { toast("Dê um nome à criatura."); return null; }
-  const habs = bfRows("hab").filter((h) => h.nome || h.desc).map((h) => ({ nome: h.nome, desc: h.desc }));
+  const habs = bfRows("hab").filter((h) => h.nome || h.desc).map((h) => ({ nome: h.nome, desc: h.desc, ...(h.est ? { est: true } : {}) }));
   return {
     id: ui.bestEdit || uid(), custom: true, nome, tipo: v("tipo"), vd: v("vd"), def: v("def"), pv: v("pv"), maq: v("maq"), desl: v("desl"), attrs: v("attrs"),
     per: v("per") || "1d20", ini: v("ini") || "1d20", res: { Fortitude: v("fort") || "1d20", Reflexos: v("ref") || "1d20", Vontade: v("von") || "1d20" },
-    pp: v("pp"), rd: v("rd"), vuln: v("vuln"), pe: v("pe"), lore: (document.getElementById("bf-lore")?.value || "").trim(),
+    pp: v("pp"), rd: v("rd"), vuln: v("vuln"), pe: v("pe"), estigma: EST_NPC.includes(v("estigma")) ? v("estigma") : "", lore: (document.getElementById("bf-lore")?.value || "").trim(),
     habs, hab: habs.map((h) => (h.nome ? `${h.nome}. ${h.desc}` : h.desc).trim()), // "hab" em texto continua para as outras extensões
     pericias: bfRows("per").filter((p) => p[0] || p[1]).map((p) => [p[0] || "Perícia", p[1] || "1d20"]),
     atq: bfRows("atq").filter((a) => a[0] || a[1] || a[2]).map((a) => [a[0] || "Ataque", a[1] || "1d20", a[2] || "", a[3] || ""]),
@@ -947,7 +970,8 @@ function npcCard(c, ci) {
         ${defs ? `<dl class="npc-defs">${defs}</dl>` : ""}
       </div>
       <div class="npc-pane" data-pane="hab" ${sub === "hab" ? "" : "hidden"}>
-        ${habs.length ? `<div class="npc-habs">${habs.map((h) => `<div class="npc-hab">${h.nome ? `<b>${esc(h.nome)}</b>` : ""}<span>${esc(h.desc)}</span></div>`).join("")}</div>` : `<p class="muted">Nenhuma habilidade. Use ✎ para adicionar.</p>`}
+        ${habs.length ? `<div class="npc-habs">${habs.map((h, hi) => h.est ? `<div class="npc-hab esthab"><div class="row"><b>✠ ${esc(h.nome || "Habilidade do Estigma")}</b><span class="grow"></span>${isGM() ? (estDoNpc(c) ? `<button class="estusar" data-npcest="${c.id}|${hi}" title="Todos na sala veem o estigma ${estDoNpc(c) === "Culpa" ? "da" : "do"} ${estDoNpc(c)} e ouvem o som">✠ Usar</button>` : `<span class="muted small">sem estigma</span>`) : ""}</div><span>${esc(h.desc)}</span></div>`
+          : `<div class="npc-hab">${h.nome ? `<b>${esc(h.nome)}</b>` : ""}<span>${esc(h.desc)}</span></div>`).join("")}</div>` : `<p class="muted">Nenhuma habilidade. Use ✎ para adicionar.</p>`}
       </div>
       <div class="npc-pane" data-pane="lore" ${sub === "lore" ? "" : "hidden"}>
         <label class="npc-lore">📜 Lore <textarea data-npc="${c.id}|lore" rows="${Math.min(14, Math.max(3, String(c.lore || "").split("\n").length + 1))}" placeholder="Escreva aqui a história deste NPC…">${esc(c.lore || "")}</textarea></label>
@@ -1523,6 +1547,8 @@ app.addEventListener("input", (e) => { if (e.target.closest?.(".bestform")) ui.b
 const val = (id) => document.getElementById(id)?.value ?? "";
 function onChange(e) {
   const el = e.target; const d = el.dataset;
+  // só uma habilidade do Estigma por ficha
+  if (d.k === "est" && el.closest("#bf-hab-list")) { if (el.checked) document.querySelectorAll("#bf-hab-list input[data-k=est]").forEach((x) => { if (x !== el) { x.checked = false; x.closest(".bf-hab")?.classList.remove("temest"); } }); el.closest(".bf-hab")?.classList.toggle("temest", el.checked); return; }
   if (d.selteam) { selTeam = Number(el.value); ui.achados = null; render(); return; }
   if (!isGM()) return;
   if (d.memcset) { const [ti, mi] = d.memcset.split("|"); const t = state.equipes[ti]; t.membros[mi][contadorDe(t)] = Math.max(0, Math.round(num(el.value))); save(); return; }
@@ -1577,6 +1603,7 @@ app.addEventListener("input", (e) => {
 function onClick(e) {
   const b = e.target.closest("button"); if (!b) return;
   const d = b.dataset;
+  if (d.npcest) { const [id, hi] = d.npcest.split("|"); usarEstigmaNpc(id, num(hi)); return; }
   if (b.id === "btnSom") { somOn = !somOn; lsSet(NS + ":som", somOn ? "1" : "0"); if (somOn) rollSound(); render(); return; }
   if (b.id === "btnDesejo") {
     const texto = val("meuDesejo").trim(); if (!texto) return toast("Escreva seu desejo primeiro.");
@@ -1926,7 +1953,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.13.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.14.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2105,7 +2132,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.13.0", location.href).href;
+  const url = new URL("quadro.html?v=2.14.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }

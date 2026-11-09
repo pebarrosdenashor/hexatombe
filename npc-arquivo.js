@@ -13,6 +13,7 @@ const CAMPOS = [
   ["Percepção", "per"], ["Iniciativa", "ini"],
   ["Fortitude", "res.Fortitude"], ["Reflexos", "res.Reflexos"], ["Vontade", "res.Vontade"],
   ["Presença perturbadora", "pp"], ["Resistências", "rd"], ["Vulnerabilidades", "vuln"],
+  ["Estigma", "estigma"],
 ];
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 const CAMPO_DE = Object.fromEntries(CAMPOS.map(([r, k]) => [norm(r), k]));
@@ -26,6 +27,7 @@ const CABECALHO = `# Fichas de NPC do Hexatombe
 # - Ataques: nome | teste | dano | tipo (um por linha)
 # - Outras rolagens e perícias: nome | dados
 # - Habilidades: cada uma começa com "## Nome" e o texto vem embaixo, com quantas linhas quiser
+# - Habilidade do Estigma: comece o nome com ✠ (ex.: "## ✠ Fúria do Rancor"). "Estigma:" no topo escolhe o estigma (Desejo, Rancor, Culpa, Prazer ou Orgulho; vazio = o do integrante)
 # - Não mude a linha "ID": é ela que faz a importação atualizar o NPC certo
 #   (apague a linha ID para importar como um NPC novo)
 `;
@@ -33,7 +35,7 @@ const CABECALHO = `# Fichas de NPC do Hexatombe
 export function npcParaTexto(n) {
   const out = ["=== NPC ==="];
   for (const [rot, k] of CAMPOS) {
-    if ((k === "pvAtual" || k === "peAtual") && (n[k] === "" || n[k] === undefined)) continue;
+    if ((k === "pvAtual" || k === "peAtual" || k === "estigma") && (n[k] === "" || n[k] === undefined)) continue;
     out.push(`${rot}: ${linha(pegar(n, k))}`);
   }
   if (n.id && n.custom) out.push(`ID: ${n.id}`);
@@ -41,7 +43,7 @@ export function npcParaTexto(n) {
   out.push("", "[Outras rolagens]", ...(n.extra || []).map((a) => [a[0], a[1]].map(linha).join(" | ")));
   out.push("", "[Perícias]", ...(n.pericias || []).map((a) => [a[0], a[1]].map(linha).join(" | ")));
   out.push("", "[Habilidades]");
-  for (const h of habsDe(n)) out.push(`## ${linha(h.nome)}`, String(h.desc || "").trim(), "");
+  for (const h of habsDe(n)) out.push(`## ${h.est ? "✠ " : ""}${linha(h.nome)}`, String(h.desc || "").trim(), "");
   out.push("[Lore]", String(n.lore || "").trim(), "");
   if ((n.historia || []).length) out.push("[História]", ...n.historia.map((h) => String(h)), "");
   out.push("[Notas do mestre]", String(n.notas || "").trim(), "");
@@ -72,7 +74,7 @@ function textoParaNpc(bloco) {
     }
     if (sec.startsWith("habilidade")) {
       const h = /^##\s?(.*)$/.exec(l);
-      if (h) { hab = { nome: h[1].trim(), desc: [] }; n.habs.push(hab); continue; }
+      if (h) { const est = /^✠/.test(h[1].trim()); hab = { nome: h[1].trim().replace(/^✠\s*/, ""), desc: [], est }; n.habs.push(hab); continue; }
       if (!hab) { if (!l.trim()) continue; hab = { nome: "", desc: [] }; n.habs.push(hab); }
       hab.desc.push(l); continue;
     }
@@ -85,7 +87,7 @@ function textoParaNpc(bloco) {
     else if (sec.startsWith("outra") || sec.startsWith("rolage")) n.extra.push([p[0] || "Rolagem", p[1] || "1d6"]);
     else if (sec.startsWith("peric")) n.pericias.push([p[0] || "Perícia", p[1] || "1d20"]);
   }
-  n.habs = n.habs.map((h) => ({ nome: h.nome, desc: h.desc.join("\n").trim() })).filter((h) => h.nome || h.desc);
+  n.habs = n.habs.map((h) => ({ nome: h.nome, desc: h.desc.join("\n").trim(), ...(h.est ? { est: true } : {}) })).filter((h) => h.nome || h.desc);
   n.lore = corpo.lore.join("\n").trim(); n.notas = corpo.notas.join("\n").trim(); n.historia = corpo.historia;
   return n;
 }
@@ -106,13 +108,14 @@ export function lerArquivoNpcs(texto) {
 
 const S = (v, max = 400) => String(v ?? "").slice(0, max);
 function limpar(n) {
-  const habs = habsDe(n).map((h) => ({ nome: S(h.nome, 120), desc: S(h.desc, 4000) })).slice(0, 40);
+  let temEst = false;
+  const habs = habsDe(n).map((h) => { const est = !!h.est && !temEst; if (est) temEst = true; return { nome: S(h.nome, 120), desc: S(h.desc, 4000), ...(est ? { est: true } : {}) }; }).slice(0, 40);
   const par = (arr, k) => (Array.isArray(arr) ? arr : []).slice(0, 30).map((a) => Array.from({ length: k }, (_, i) => S(a?.[i], 120)));
   const out = {
     id: n.id ? S(n.id, 40) : "", custom: true, nome: S(n.nome, 80), tipo: S(n.tipo, 120), vd: S(n.vd, 20), def: S(n.def, 20), pv: S(n.pv, 20), pe: S(n.pe, 20),
     maq: S(n.maq, 20), desl: S(n.desl, 80), attrs: S(n.attrs, 200), per: S(n.per || "1d20", 40), ini: S(n.ini || "1d20", 40),
     res: { Fortitude: S(n.res?.Fortitude || "1d20", 40), Reflexos: S(n.res?.Reflexos || "1d20", 40), Vontade: S(n.res?.Vontade || "1d20", 40) },
-    pp: S(n.pp), rd: S(n.rd), vuln: S(n.vuln),
+    pp: S(n.pp), rd: S(n.rd), vuln: S(n.vuln), estigma: ["Desejo", "Rancor", "Culpa", "Prazer", "Orgulho"].includes(String(n.estigma || "").trim()) ? String(n.estigma).trim() : "",
     atq: par(n.atq, 4), extra: par(n.extra, 2), pericias: par(n.pericias, 2),
     habs, hab: habs.map((h) => (h.nome ? `${h.nome}. ${h.desc}` : h.desc).trim()),
     lore: S(n.lore, 8000), notas: S(n.notas, 4000), historia: (n.historia || []).map((h) => S(h, 1000)).slice(0, 30),

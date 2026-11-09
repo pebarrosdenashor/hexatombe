@@ -176,3 +176,9 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - **Fome agora é de cada comensal:** na aba Equipes, cada integrante de Os Comensais tem o seu contador (− valor +) na própria linha; o cartão mostra o total da equipe.
 - **Fervor do andor** continua um só para toda A Romaria.
 - O Escudo do Mestre mostra esses contadores também no combate.
+
+## Habilidade do Estigma (versão 2.14)
+- Na ficha de um NPC (aba NPCs → ✎), marque **✠ Estigma** na habilidade que é a do Estigma. Só uma por ficha.
+- **✠ Estigma do sacrifício:** deixe em “Automático” para usar o estigma do integrante na equipe, ou escolha um.
+- Na aba Habilidades do NPC, a do Estigma aparece em vermelho com **✠ Usar**: todos na sala veem a animação do estigma e ouvem o som (precisa do Escudo do Mestre instalado na sala). No Escudo do Mestre, usar essa habilidade no Combate faz o mesmo.
+- No arquivo .txt das fichas: comece o nome da habilidade com ✠ (`## ✠ Fúria do Cervo`) e use a linha `Estigma: Rancor` no topo, se quiser fixar o estigma.

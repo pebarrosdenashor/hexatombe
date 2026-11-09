@@ -565,3 +565,16 @@ details.npc[open] > .npc-sum { border-bottom: 1px solid var(--line); background:
 .members td.mcont .icon { min-width: 22px; padding: 1px 4px; }
 .members .mcv { width: 40px; text-align: center; font-family: var(--f-num); font-weight: 700; padding: 1px 2px; }
 .contador .cnota { margin: 4px 0 0; }
+
+/* ---------- Habilidade do Estigma ---------- */
+.bf-est { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 12px; color: #ff8a92; cursor: pointer; }
+.bf-est { flex-direction: row !important; }
+.bf-est input { accent-color: #e0141f; margin: 0; display: inline-block !important; width: auto !important; }
+.bf-hab.temest { border-left-color: #ff2a35; background: rgba(224, 20, 31, .1); box-shadow: inset 2px 0 10px rgba(224, 20, 31, .25); }
+.bf-estsel { display: block; margin-top: 8px; }
+.npc-pane .npc-hab.esthab { border-left-color: #ff2a35; background: linear-gradient(90deg, rgba(224, 20, 31, .18), var(--panel2)); }
+.npc-pane .npc-hab.esthab b { color: #ff6b73; text-shadow: 0 0 8px rgba(224, 20, 31, .6); }
+.npc-hab.esthab .row { display: flex; align-items: center; gap: 6px; }
+.npc-hab.esthab .estusar { margin-left: auto; }
+button.estusar { background: #8e0f1b; border: 1px solid #e0141f; color: #fff; font-weight: 600; padding: 3px 10px; border-radius: 6px; box-shadow: 0 0 10px rgba(224, 20, 31, .45); cursor: pointer; }
+button.estusar:hover { background: #b0121f; box-shadow: 0 0 16px rgba(255, 42, 53, .7); }

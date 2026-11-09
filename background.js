@@ -1,9 +1,9 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.13.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.13.0";
-import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.13.0";
-import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.13.0";
-import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.13.0";
+import * as IMG from "./imagens.js?v=2.14.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.14.0";
+import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.14.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.14.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.14.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -56,7 +56,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.13.0", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.14.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
