@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hexatombe · Cutscene</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;700&family=Alegreya:ital@0;1&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#e6dcc4;font-family:"Alegreya",Georgia,serif}
+  #palco{position:fixed;inset:0;overflow:hidden;background:#000}
+  #mundo{position:absolute;inset:0;will-change:transform,filter}
+  .olho{position:absolute;left:-5%;width:110%;height:62%;pointer-events:none;will-change:transform}
+  #olho-c{top:0;background:linear-gradient(#000 0 82%,rgba(0,0,0,.85) 90%,transparent);border-radius:0 0 50% 50% / 0 0 30% 30%}
+  #olho-b{bottom:0;background:linear-gradient(0deg,#000 0 82%,rgba(0,0,0,.85) 90%,transparent);border-radius:50% 50% 0 0 / 30% 30% 0 0}
+  #vinheta{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(0,0,0,.75) 100%)}
+  #grao{position:absolute;inset:0;width:100%;height:100%;opacity:.07;mix-blend-mode:overlay;pointer-events:none;image-rendering:pixelated}
+  #veu{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+  .legenda{position:absolute;left:50%;bottom:9vh;transform:translateX(-50%);width:min(880px,86vw);text-align:center;
+    font-size:clamp(18px,2.3vw,30px);line-height:1.35;font-style:italic;text-shadow:0 2px 12px #000,0 0 3px #000;
+    opacity:0;transition:opacity .6s ease;pointer-events:none}
+  .legenda.vis{opacity:1}
+  .legenda .resto{opacity:0;font-style:inherit}
+  .legenda.forte{font-family:"Alegreya SC",Georgia,serif;font-style:normal;letter-spacing:.06em;color:#e9c9a0}
+  #titulo{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:14px;opacity:0;transition:opacity 2.4s ease;pointer-events:none}
+  #titulo.vis{opacity:1}
+  .t-hex{font-family:"Alegreya SC",Georgia,serif;font-weight:700;font-size:clamp(48px,9vw,128px);letter-spacing:.22em;color:#b23a2e;
+    text-shadow:0 0 30px rgba(178,58,46,.45);animation:pulsa 4s ease-in-out infinite;padding-left:.22em}
+  .t-sub{font-family:"Alegreya SC",Georgia,serif;font-size:clamp(18px,2.4vw,30px);letter-spacing:.3em;color:#cfc4ab}
+  .t-dia{font-family:"IBM Plex Mono",monospace;font-size:clamp(12px,1.2vw,16px);letter-spacing:.25em;text-transform:uppercase;color:#8f8875;margin-top:10px}
+  @keyframes pulsa{50%{text-shadow:0 0 50px rgba(178,58,46,.7)}}
+  #porta{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#000;cursor:pointer;z-index:5;transition:opacity 1.2s ease}
+  #porta h2{font-family:"Alegreya SC",Georgia,serif;font-weight:400;font-size:clamp(20px,2.4vw,30px);letter-spacing:.14em;margin:0;opacity:0;transition:opacity .8s}
+  #porta.pronto h2{opacity:.85;animation:resp 3.2s ease-in-out infinite}
+  #porta p{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#6c6657;margin-top:16px}
+  #porta.sai{opacity:0;pointer-events:none}
+  @keyframes resp{50%{opacity:.35}}
+  #fim{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    background:none;border:1px solid #3a372f;color:#8f8875;padding:10px 18px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.5s;z-index:4}
+  #fim.vis{opacity:1;pointer-events:auto}
+  #fim:hover{color:#e6dcc4;border-color:#8f8875}
+  #sair{position:absolute;top:14px;right:16px;z-index:6;background:none;border:0;color:#4d493f;font:12px "IBM Plex Mono",monospace;letter-spacing:.15em;cursor:pointer}
+  #sair:hover{color:#a69e89}
+</style></head>
+<body>
+<div id="palco">
+  <div id="mundo"></div>
+  <div id="vinheta"></div>
+  <canvas id="grao"></canvas>
+  <div class="olho" id="olho-c"></div><div class="olho" id="olho-b"></div>
+  <div id="veu"></div>
+  <div id="legenda" class="legenda"></div>
+  <div id="titulo"></div>
+  <button id="fim">Fechar</button>
+</div>
+<div id="porta"><h2>…</h2><p>Use fones · Esc para sair</p></div>
+<button id="sair" title="Sair (Esc)">SAIR ✕</button>
+<script type="module" src="cena.js?v=1.0.0"></script>
+</body></html>

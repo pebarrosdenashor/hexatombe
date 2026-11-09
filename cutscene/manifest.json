@@ -1,0 +1,15 @@
+{
+  "name": "Cutscenes do Hexatombe",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Cutscenes do Hexatombe",
+    "icon": "https://pebarrosdenashor.github.io/hexatombe/cutscene/icon.svg",
+    "popover": "https://pebarrosdenashor.github.io/hexatombe/cutscene/index.html",
+    "height": 420,
+    "width": 380
+  },
+  "background_url": "https://pebarrosdenashor.github.io/hexatombe/cutscene/background.html",
+  "author": "pebarrosdenashor",
+  "description": "Cutscenes em primeira pessoa para o Hexatombe. O mestre aperta tocar e a cena abre em tela cheia para todos."
+}
