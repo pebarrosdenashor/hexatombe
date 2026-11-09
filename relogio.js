@@ -1,9 +1,10 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import { NS, FASES_R, velas, velasHTML, VELAS_CSS, relogio, mmss, pref, PREF, ehNoite, ehLua, opcoes } from "./ritmo.js?v=2.15.0";
+import { NS, FASES_R, velas, velasHTML, VELAS_CSS, relogio, mmss, pref, PREF, ehNoite, ehLua, opcoes } from "./ritmo.js?v=2.16.0";
 
 /* Relógio do ritual na tela (popover pequeno sobre o mapa):
    dia e fase, as seis velas e o relógio do sacrifício. */
 const ID = NS + "/relogio";
+const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const $hud = document.getElementById("hud");
 document.getElementById("vcss").textContent = VELAS_CSS;
 let roomId = new URLSearchParams(location.search).get("sala") || "local";
@@ -25,11 +26,11 @@ function velasNovas() {
 function desenhar() {
   ler();
   if (!st?.equipes) { $hud.className = "hud"; $hud.innerHTML = `<div class="vazio">O ritual ainda não começou.</div>`; return; }
-  const noite = ehNoite(st), lua = noite && ehLua(st);
+  const noite = ehNoite(st), bat = !!(st.batalha && !Array.isArray(st.batalha)), lua = (noite && ehLua(st)) || (bat && st.batalha.vermelho);
   $hud.className = `hud ${lua ? "noite lua" : noite ? "noite" : "dia"} ${pref.calmo() ? "calmo" : ""}`;
   const fase = Number(st.fase) || 0;
   $hud.innerHTML = `<div class="topo"><span class="astro"></span>
-      <span class="titulo">DIA ${Number(st.dia) || 1} · ${lua ? "LUA DE SANGUE" : noite ? "NOITE" : FASES_R[fase].toUpperCase()}</span>
+      <span class="titulo" title="${bat ? esc(`Batalha de intenções: ${st.batalha.nomes?.[0]} contra ${st.batalha.nomes?.[1]}`) : ""}">DIA ${Number(st.dia) || 1} · ${bat ? "⚔ BATALHA" : noite && ehLua(st) ? "LUA DE SANGUE" : noite ? "NOITE" : FASES_R[fase].toUpperCase()}</span>
       <button class="bt" id="mover" title="Mudar o relógio de lugar">⇄</button><button class="bt" id="fechar" title="Esconder (dá para mostrar de novo na aba Ritual)">✕</button></div>
     <div class="velas-wrap">${velasHTML(st, { novas: velasNovas(), w: 22, h: 44 })}</div>
     <div id="relo"></div>`;

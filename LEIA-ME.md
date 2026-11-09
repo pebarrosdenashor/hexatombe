@@ -191,3 +191,10 @@ Mapa de Bom Jesus do Açude, a cidade afogada da arena. É uma extensão à part
 - **Seis velas:** uma por estigma; apaga (com fumaça) quando o sacrifício daquele estigma morre. Funciona com mortes anônimas, porque só mostra o estigma.
 - **Relógio na tela:** dia, fase, velas e relógio num quadrinho sobre o mapa. Cada pessoa pode esconder (✕), trocar de lugar (⇄: topo, canto direito, embaixo) e ligar "reduzir efeitos" na aba Ritual → "Na minha tela".
 - O mestre liga/desliga cada efeito para a mesa na aba Ritual → Ritmo do ritual → Controles do mestre.
+
+## Novidades da versão 2.16 — batalha de intenções
+
+- A batalha agora aceita **jogador × jogador, jogador × NPC e NPC × NPC**: integrantes de qualquer equipe, NPCs sem equipe e fichas de jogador sem equipe (👤 ficha · ◆ NPC).
+- Ao iniciar, o mestre escolhe **🩸 Tela avermelhada para todos** (o mapa fica vermelho e pulsa devagar, como na Lua de Sangue) e o **🎬 cartão de abertura** da batalha. A tela avermelhada liga/desliga durante a batalha.
+- Painel da batalha com o PV de cada lado, botão **🎲 +1d10** de intenção contra o rival e calculadora de "dano de fora" (sofre metade).
+- Todos veem a faixa da batalha na aba Ritual e no relógio da tela; a ficha do jogador e o cartão do NPC marcam contra quem a batalha é.

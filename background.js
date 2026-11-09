@@ -1,10 +1,10 @@
 import OBR, { buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.15.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.15.0";
-import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.15.0";
-import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.15.0";
-import { PREF, pref, opcoes, ehNoite, ehLua, relogio as relogioDe } from "./ritmo.js?v=2.15.0";
-import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.15.0";
+import * as IMG from "./imagens.js?v=2.16.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.16.0";
+import { CONTADOR_KEY, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.16.0";
+import { imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.16.0";
+import { PREF, pref, opcoes, ehNoite, ehLua, relogio as relogioDe } from "./ritmo.js?v=2.16.0";
+import { QCH, ler as lerQuadro, gravar as gravarQuadro, mesclar, vivos, enviador, receptor, tokenServe, cardDeToken, CAMADAS_TOKEN } from "./quadro-dados.js?v=2.16.0";
 
 /* Fica rodando enquanto a sala está aberta, mesmo com a janela do Hexatombe fechada:
    - toca o sino e deixa o mapa vermelho quando um sacrifício é realizado
@@ -58,7 +58,7 @@ async function abrirPista(p) {
       if (!p.para.some((ti) => minhas.includes(Number(ti)))) return;
     }
     localStorage.setItem(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.15.0", location.href).href, width: 620, height: 760 });
+    await OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.16.0", location.href).href, width: 620, height: 760 });
   } catch { /* */ }
 }
 /* Jogada de circo de um jogador, com a janela do mestre fechada */
@@ -171,7 +171,8 @@ function aplicarNoite() { filaNoite = filaNoite.then(aplicarNoiteJa).catch(() =>
 async function aplicarNoiteJa() {
   if (!(await OBR.scene.isReady())) return;
   const st = stR;
-  const quer = st?.equipes && opcoes(st).noite && ehNoite(st) ? (ehLua(st) ? { cor: "#3d0010", op: 0.5 } : { cor: "#02040f", op: 0.55 }) : null;
+  const quer = batalhaVermelha(st) ? { cor: "#7a0018", op: 0.42 }
+    : st?.equipes && opcoes(st).noite && ehNoite(st) ? (ehLua(st) ? { cor: "#3d0010", op: 0.5 } : { cor: "#02040f", op: 0.55 }) : null;
   const [ja] = await OBR.scene.local.getItems([NOITE_ID]);
   const atual = ja ? ja.style.fillOpacity : 0;
   const passos = pref.calmo() ? 1 : 14;
@@ -193,6 +194,19 @@ async function aplicarNoiteJa() {
   if (Math.abs(atual - quer.op) > 0.01) await fade(atual, quer.op);
 }
 
+// Batalha de intenções com tela avermelhada (v2.16): vermelho que pulsa devagar, como um coração
+const batalhaVermelha = (st) => !!(st?.batalha && !Array.isArray(st.batalha) && st.batalha.vermelho);
+let pulso = false;
+setInterval(() => {
+  if (!batalhaVermelha(stR) || pref.calmo()) return;
+  filaNoite = filaNoite.then(async () => {
+    if (!batalhaVermelha(stR) || !(await OBR.scene.isReady())) return;
+    const [ja] = await OBR.scene.local.getItems([NOITE_ID]); if (!ja || ja.style.fillColor !== "#7a0018") return;
+    pulso = !pulso; const de = ja.style.fillOpacity, para = pulso ? 0.52 : 0.36;
+    for (let i = 1; i <= 5; i++) { await OBR.scene.local.updateItems([NOITE_ID], (ds) => { for (const x of ds) x.style.fillOpacity = de + (para - de) * (i / 5); }); await sleep(120); }
+  }).catch(() => {});
+}, 1500);
+
 // Relógio e velas na tela (popover pequeno sobre o mapa)
 const HUD_ID = NS + "/relogio";
 let hudAberto = false, hudPos = "";
@@ -203,7 +217,7 @@ async function abrirHud() {
     : pos === "baixo" ? { a: { left: w / 2, top: h - 10 }, o: { horizontal: "CENTER", vertical: "BOTTOM" } }
     : { a: { left: w / 2, top: 10 }, o: { horizontal: "CENTER", vertical: "TOP" } };
   await OBR.popover.open({
-    id: HUD_ID, url: new URL(`relogio.html?v=2.15.0&sala=${encodeURIComponent(roomId)}`, location.href).href,
+    id: HUD_ID, url: new URL(`relogio.html?v=2.16.0&sala=${encodeURIComponent(roomId)}`, location.href).href,
     width: 270, height: 148, anchorReference: "POSITION", anchorPosition: cfg.a, anchorOrigin: cfg.o, transformOrigin: cfg.o,
     hidePaper: true, disableClickAway: true, marginThreshold: 4,
   });
@@ -222,9 +236,9 @@ async function mostrarCartao(c) {
   if (!c) return;
   try {
     localStorage.setItem(NS + ":cartao", JSON.stringify({ ...c, at: Date.now() }));
-    await OBR.modal.open({ id: NS + "/cartao", url: new URL(`cartao.html?v=2.15.0&t=${Date.now()}`, location.href).href, fullScreen: true, hideBackdrop: true, hidePaper: true });
+    await OBR.modal.open({ id: NS + "/cartao", url: new URL(`cartao.html?v=2.16.0&t=${Date.now()}`, location.href).href, fullScreen: true, hideBackdrop: true, hidePaper: true });
   } catch { /* */ }
-  setTimeout(() => toque(c.evt === "noite" ? "noite" : "dia"), pref.calmo() ? 100 : 900);
+  setTimeout(() => toque(c.evt === "batalha" ? "hora" : c.evt === "noite" ? "noite" : "dia"), pref.calmo() ? 100 : 900);
 }
 
 // O relógio do sacrifício chegou a zero: toca o sino uma vez em cada tela

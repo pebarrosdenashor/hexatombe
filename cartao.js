@@ -1,5 +1,5 @@
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import { NS, velasHTML, VELAS_CSS, pref } from "./ritmo.js?v=2.15.0";
+import { NS, velasHTML, VELAS_CSS, pref } from "./ritmo.js?v=2.16.0";
 
 /* Cartão de abertura do dia / da noite, em tela cheia, aberto pelo fundo da extensão.
    Fecha sozinho depois de alguns segundos ou com um clique. */
@@ -21,7 +21,7 @@ function fechar() {
 function montar() {
   if (!c) { fechar(); return; }
   const b = document.body;
-  b.classList.add(c.evt === "noite" ? "noite" : "dia");
+  b.classList.add(c.evt === "dia" ? "dia" : "noite");
   if (c.lua) b.classList.add("lua");
   if (calmo) b.classList.add("calmo");
   $("kicker").textContent = c.kicker || "";

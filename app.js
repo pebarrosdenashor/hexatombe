@@ -1,11 +1,11 @@
 import OBR, { buildLabel, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as IMG from "./imagens.js?v=2.15.0";
-import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.15.0";
-import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.15.0";
-import * as PM from "./prato-mestre.js?v=2.15.0";
-import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.15.0";
-import { ROTULOS, velasHTML, VELAS_CSS, relogio as relogioDe, mmss, cartaoDe, pref, opcoes as ritmoOp } from "./ritmo.js?v=2.15.0";
-import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.15.0";
+import * as IMG from "./imagens.js?v=2.16.0";
+import { npcsParaArquivo, modeloNpc, lerArquivoNpcs, nomeArquivo } from "./npc-arquivo.js?v=2.16.0";
+import { IMPORT_KEY, lerPedido, apagarPedido, aplicarPedido } from "./importar.js?v=2.16.0";
+import * as PM from "./prato-mestre.js?v=2.16.0";
+import { CONTADOR_KEY, CONTADORES, contadorDe, lerOps, apagarOps, aplicarOps } from "./contadores.js?v=2.16.0";
+import { ROTULOS, velasHTML, VELAS_CSS, relogio as relogioDe, mmss, cartaoDe, pref, opcoes as ritmoOp } from "./ritmo.js?v=2.16.0";
+import { NIVEIS, NIVEL_CURTO, CAMPOS, PESQ_MAX, migrarRevela, revelaDe as revelaSt, sabe, imgLiberada, aplicarPesquisa } from "./bestiario.js?v=2.16.0";
 
 /* =========================================================
    Hexatombe — extensão para Owlbear Rodeo
@@ -995,7 +995,7 @@ function npcCard(c, ci) {
   const tags = [c.des ? `<span class="tag bad">desertor${num(c.pen) ? ` −${num(c.pen)}` : ""}</span>` : "",
     conds.length ? `<span class="tag bad">${esc(conds.join(", "))} <button class="icon" data-npcclr="${c.id}" title="Limpar condições">✕</button></span>` : "",
     num(c.semAgua) ? `<span class="tag">sem água ×${c.semAgua}</span>` : "", num(c.semComida) ? `<span class="tag">sem comida ×${c.semComida}</span>` : "",
-    ...(c.rewards || []).map((r) => `<span class="tag good">✦ ${esc(r)}</span>`)].filter(Boolean).join("");
+    ...(c.rewards || []).map((r) => `<span class="tag good">✦ ${esc(r)}</span>`), c.batalha ? `<span class="tag bad">⚔ batalha contra ${esc(c.batalha)}</span>` : ""].filter(Boolean).join("");
   const roll = (attr, rot, dado) => `<button class="nroll" ${attr}><span>${esc(rot)}</span><b>${esc(dado)}</b></button>`;
   const testes = [roll(`data-mon="${ci}|per"`, "Percepção", c.per), roll(`data-mon="${ci}|ini"`, "Iniciativa", c.ini),
     ...Object.entries(c.res || {}).map(([k, v]) => roll(`data-mon="${ci}|res|${k}"`, k, v)),
@@ -1215,6 +1215,7 @@ function tabRitual() {
     </div>
   </section>
   ${ritmoCard()}
+  ${batalhaBanner()}
 
   <section class="card stats">
     <div><b>${state.sacrificios.length}/6</b><span>sacrifícios</span></div>
@@ -1504,15 +1505,112 @@ function tabExplorar() {
   </section>`;
 }
 
+/* ---------- Batalha de intenções (v2.16): jogador × jogador, jogador × NPC, NPC × NPC ---------- */
+// Cada lado é uma referência: "m:<integrante>", "npc:<NPC sem equipe>" ou "ficha:<ficha sem equipe>"
+function lutadorOpcoes(sel = "") {
+  const o = (v, t) => `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(t)}</option>`;
+  let h = `<option value="">—</option>`;
+  for (const t of state.equipes) {
+    const ms = t.membros.filter((m) => m.vivo); if (!ms.length) continue;
+    h += `<optgroup label="${esc(t.nome)}">${ms.map((m) => o("m:" + m.id, `${m.npcId ? "◆ " : "👤 "}${mName(m)}${m.sac ? " ✠" : ""}`)).join("")}</optgroup>`;
+  }
+  const livres = npcsLivres().filter((c) => !(num(c.pv) > 0 && num(c.pvAtual) <= 0 && c.pvAtual !== ""));
+  if (livres.length) h += `<optgroup label="NPCs sem equipe">${livres.map((c) => o("npc:" + c.id, "◆ " + (c.nome || "?"))).join("")}</optgroup>`;
+  const usadas = new Set(allMembers().map((x) => x.m.sheetId).filter(Boolean));
+  const soltas = visibleSheets().filter(({ s }) => !usadas.has(s.id));
+  if (soltas.length) h += `<optgroup label="Fichas sem equipe">${soltas.map(({ s }) => o("ficha:" + s.id, "👤 " + (s.header?.personagem || "?"))).join("")}</optgroup>`;
+  return h;
+}
+function lutador(ref) {
+  const [k, id] = String(ref || "").split(/:(.*)/s);
+  if (k === "m") {
+    const x = findM(id); if (!x) return null;
+    const npc = x.m.npcId && npcGet(x.m.npcId);
+    return { ref, nome: mName(x.m), equipe: x.t.nome, npc: npc || null, sheetId: npc ? null : x.m.sheetId };
+  }
+  if (k === "npc") { const c = npcGet(id); return c ? { ref, nome: c.nome || "?", equipe: "", npc: c, sheetId: null } : null; }
+  if (k === "ficha") { const sh = getSheet(id); return sh ? { ref, nome: sh.header?.personagem || "?", equipe: "", npc: null, sheetId: id } : null; }
+  return null;
+}
+function marcarRival(L, rival) {
+  if (!L) return;
+  if (L.npc) { if (rival) L.npc.batalha = rival; else delete L.npc.batalha; }
+  if (L.sheetId) applySheet(L.sheetId, (sh) => { if (rival) sh.hexa.batalha = rival; else delete sh.hexa.batalha; });
+}
+function pvDe(L) {
+  if (!L) return null;
+  if (L.npc) { npcPv(L.npc); return num(L.npc.pv) > 0 ? [num(L.npc.pvAtual), num(L.npc.pv)] : null; }
+  const sh = L.sheetId && getSheet(L.sheetId); return sh?.pv ? [num(sh.pv.atual), num(sh.pv.max)] : null;
+}
+function iniciarBatalha() {
+  const a = val("bA"), c = val("bB");
+  if (!a || !c || a === c) return toast("Escolha dois combatentes diferentes.");
+  const A = lutador(a), B = lutador(c); if (!A || !B) return toast("Não encontrei um dos combatentes.");
+  const vermelho = ui.bVerm !== false, cartao = ui.bCart !== false;
+  state.batalha = { id: uid(), a, b: c, nomes: [A.nome, B.nome], tipos: [A.npc ? "npc" : "jogador", B.npc ? "npc" : "jogador"], vermelho, inicio: Date.now() };
+  marcarRival(A, B.nome); marcarRival(B, A.nome);
+  const txt = `⚔ Batalha de intenções: ${A.nome} contra ${B.nome}.`; addEvent(txt); announce(txt); save();
+  if (cartao && obrOk) setTimeout(() => OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: {
+    evt: "batalha", dia: state.dia, lua: true, kicker: "A COROA EXIGE", titulo: "BATALHA", sub: "de intenções",
+    frase: `${A.nome} contra ${B.nome}. As intenções se chocam, e só o sangue do rival as acalma.`,
+    info: "+1d10 de dano no rival · metade de qualquer outro dano" } }, { destination: "ALL" }).catch(() => {}), 700);
+}
+function encerrarBatalha() {
+  const bt = batalhaAtual(); if (!bt) { state.batalha = null; return save(); }
+  marcarRival(lutador(bt.a), null); marcarRival(lutador(bt.b), null);
+  state.batalha = null; addEvent(`A batalha de intenções entre ${bt.nomes[0]} e ${bt.nomes[1]} terminou.`); announce("⚔ A batalha de intenções terminou."); save();
+}
+function batalhaAtual() {
+  const b = state.batalha; if (!b) return null;
+  if (Array.isArray(b)) { // formato antigo: [integrante, integrante]
+    const A = lutador("m:" + b[0]), B = lutador("m:" + b[1]);
+    return { id: "antiga", a: "m:" + b[0], b: "m:" + b[1], nomes: [A?.nome || "?", B?.nome || "?"], tipos: [A?.npc ? "npc" : "jogador", B?.npc ? "npc" : "jogador"], vermelho: false };
+  }
+  return b;
+}
+function rolarIntencao(lado) {
+  const bt = batalhaAtual(); if (!bt) return;
+  const atk = bt.nomes[lado], alvo = bt.nomes[1 - lado];
+  const r = rollExpr("1d10");
+  announce(`⚔ ${atk} fere ${alvo} com a intenção: +${r.total} de dano (1d10).`);
+}
+function batalhaBanner() {
+  const bt = batalhaAtual(); if (!bt) return "";
+  return `<div class="banner blood batalha-banner"><b>⚔ BATALHA DE INTENÇÕES</b><span><b>${esc(bt.nomes[0])}</b> contra <b>${esc(bt.nomes[1])}</b> — cada um causa +1d10 de dano no rival e sofre metade de qualquer dano que não venha dele.</span></div>`;
+}
+function batalhaCard() {
+  const bt = batalhaAtual();
+  const intro = `<p class="muted">Duelo forçado entre dois combatentes — jogador contra jogador, jogador contra NPC ou NPC contra NPC: cada um causa +1d10 de dano no outro e sofre metade de qualquer dano que não venha do rival.</p>`;
+  if (!bt) {
+    if (!isGM()) return `<section class="card"><h3>Batalha de intenções</h3>${intro}<p class="muted">Nenhuma batalha agora.</p></section>`;
+    return `<section class="card batalha"><h3>Batalha de intenções</h3>${intro}
+      <div class="bat-sel"><select id="bA">${lutadorOpcoes(ui.bA)}</select><span class="bat-x">⚔</span><select id="bB">${lutadorOpcoes(ui.bB)}</select></div>
+      <p class="muted small">👤 ficha de jogador · ◆ NPC</p>
+      <label class="check"><input type="checkbox" id="bVerm" ${ui.bVerm !== false ? "checked" : ""}> 🩸 Tela avermelhada para todos (como na Lua de Sangue)</label>
+      <label class="check"><input type="checkbox" id="bCart" ${ui.bCart !== false ? "checked" : ""}> 🎬 Cartão de abertura da batalha</label>
+      <button class="primary" id="btnBat">⚔ Iniciar batalha</button></section>`;
+  }
+  const lado = (i) => {
+    const L = lutador(i ? bt.b : bt.a); const pv = pvDe(L); const sofre = ui["batDano" + i];
+    return `<div class="bat-lado"><span class="bat-tipo">${bt.tipos?.[i] === "npc" ? "◆ NPC" : "👤 Jogador"}${L?.equipe ? ` · ${esc(L.equipe)}` : ""}</span>
+      <b class="bat-nome">${esc(bt.nomes[i])}</b>
+      ${pv ? `<span class="bat-pv">PV ${pv[0]}/${pv[1]}<span class="mbar"><i style="width:${pv[1] ? clamp(Math.round(100 * pv[0] / pv[1]), 0, 100) : 0}%"></i></span></span>` : ""}
+      ${isGM() ? `<button class="primary" data-batroll="${i}">🎲 +1d10 em ${esc(bt.nomes[1 - i])}</button>
+      <label>Dano de fora <input type="number" min="0" data-batdano="${i}" value="${esc(sofre ?? "")}" placeholder="0"></label>
+      <span class="muted small" data-batmeio="${i}">${num(sofre) ? `sofre só ${Math.floor(num(sofre) / 2)}` : "sofre metade"}</span>` : ""}</div>`;
+  };
+  return `<section class="card batalha on"><h3>Batalha de intenções <span class="muted small">em andamento</span></h3>
+    <div class="bat-arena">${lado(0)}<span class="bat-x">⚔</span>${lado(1)}</div>
+    ${isGM() ? `<label class="check"><input type="checkbox" id="bVermOn" ${bt.vermelho ? "checked" : ""}> 🩸 Tela avermelhada para todos</label>
+    <div class="row"><button class="ghost" id="btnBatCart">🎬 Mostrar o cartão de novo</button><button class="danger" id="btnBatEnd">Encerrar batalha</button></div>` : ""}
+  </section>`;
+}
+
 function tabExtras() {
   const b = state.batalha;
   const ranking = (arr, un = "") => arr.length ? `<ol class="rank">${[...arr].sort((x, y) => y.pts - x.pts).map((r) => `<li>${esc(r.nome)} <b>${r.pts}${un}</b></li>`).join("")}</ol>` : "";
   return `
-  <section class="card"><h3>Batalha de intenções</h3>
-    <p class="muted">Duelo forçado entre duas pessoas: cada uma causa +1d10 de dano na outra e sofre metade de qualquer dano que não venha da rival.</p>
-    ${b ? `<p><b>${esc(mName(findM(b[0])?.m || { nome: "?" }))}</b> ⚔ <b>${esc(mName(findM(b[1])?.m || { nome: "?" }))}</b></p>${isGM() ? `<button id="btnBatEnd">Encerrar batalha</button>` : ""}`
-      : isGM() ? `<div class="row"><select id="bA">${memberOptions((m) => m.vivo)}</select><span>⚔</span><select id="bB">${memberOptions((m) => m.vivo)}</select><button class="primary" id="btnBat">Iniciar</button></div>` : `<p class="muted">Nenhuma batalha agora.</p>`}
-  </section>
+  ${batalhaCard(b)}
 
   <section class="card"><h3>Jogos do circo — Acerte os dardos</h3>
     <p class="muted">Três testes de Pontaria. DT 10 = 5 pts · 15 = 10 · 20 = 15 · 25 = 25 · 30 = 50.</p>
@@ -1767,16 +1865,9 @@ function onClick(e) {
     if (add.length) addEvent(`${t.nome} guardou: ${add.join(", ")}.`); else toast("Nada de água, comida ou sucata para guardar.");
     save(); return;
   }
-  if (b.id === "btnBat") {
-    const a = val("bA"), c = val("bB"); if (!a || !c || a === c) return toast("Escolha duas pessoas diferentes.");
-    state.batalha = [a, c]; const A = findM(a), B = findM(c);
-    applySheet(A.m.sheetId, (s) => { s.hexa.batalha = mName(B.m); }); applySheet(B.m.sheetId, (s) => { s.hexa.batalha = mName(A.m); });
-    const txt = `⚔ Batalha de intenções: ${mName(A.m)} contra ${mName(B.m)}.`; addEvent(txt); announce(txt); save(); return;
-  }
-  if (b.id === "btnBatEnd") {
-    for (const id of state.batalha || []) { const x = findM(id); if (x) applySheet(x.m.sheetId, (s) => { delete s.hexa.batalha; }); }
-    state.batalha = null; addEvent("A batalha de intenções terminou."); save(); return;
-  }
+  if (b.id === "btnBat") return iniciarBatalha();
+  if (b.id === "btnBatEnd") return encerrarBatalha();
+  if (d.batroll !== undefined) return rolarIntencao(num(d.batroll));
   if (b.id === "btnDardosReset") { state.circo.dardos = []; save(); return; }
   if (b.id === "btnSocoReset") { state.circo.soco = []; save(); return; }
   if (b.id === "btnUndoH") return undoAction();
@@ -2003,7 +2094,7 @@ const ytOuImg = (u) => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 /* ---------- Pistas ---------- */
 function abrirPista(p) {
   lsSet(NS + ":handout", JSON.stringify({ ...p, at: Date.now() }));
-  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.15.0", location.href).href, width: 620, height: 760 });
+  if (obrOk) OBR.modal.open({ id: NS + "/handout", url: new URL("handout.html?v=2.16.0", location.href).href, width: 620, height: 760 });
   else window.open("handout.html", "_blank");
 }
 async function mostrarPistaParaTodos(p) {
@@ -2182,7 +2273,7 @@ function quadroAba() {
     <p class="muted small">Dicas: arraste os cartões; 🧶 liga dois cartões (clique num barbante para escrever o que liga os dois ou cortar); duas vezes numa nota para editar; Ctrl + roda do mouse para aproximar. Barbante preto é para suspeita.</p></section>`;
 }
 function abrirQuadro() {
-  const url = new URL("quadro.html?v=2.15.0", location.href).href;
+  const url = new URL("quadro.html?v=2.16.0", location.href).href;
   if (obrOk) OBR.modal.open({ id: NS + "/quadro", url, fullScreen: true });
   else window.open(url + (isGM() ? "&gm" : ""), "_blank");
 }
@@ -2399,10 +2490,19 @@ app.addEventListener("click", wrapGM(onArquivoClick));
 app.addEventListener("click", wrapGM((e) => {
   const b = e.target.closest?.("button"); if (!b) return;
   if (b.dataset.relogioAcao && isGM()) { relogioAcao(b.dataset.relogioAcao); return; }
+  if (b.id === "btnBatCart" && isGM()) { const bt = batalhaAtual(); if (bt && obrOk) OBR.broadcast.sendMessage(CHANNEL, { kind: "ritmo", cartao: { evt: "batalha", dia: state.dia, lua: true, kicker: "A COROA EXIGE", titulo: "BATALHA", sub: "de intenções", frase: `${bt.nomes[0]} contra ${bt.nomes[1]}. As intenções se chocam, e só o sangue do rival as acalma.`, info: "+1d10 de dano no rival · metade de qualquer outro dano" } }, { destination: "ALL" }).catch(() => {}); return; }
   if (b.id === "btnCartao" && isGM()) { enviarCartao(state.fase === 2 ? "noite" : "dia", true); toast("Cartão enviado para a mesa."); }
 }));
+app.addEventListener("input", (e) => {
+  const el = e.target; const i = el.dataset?.batdano; if (i === undefined) return;
+  ui["batDano" + i] = el.value; const m = app.querySelector(`[data-batmeio="${i}"]`);
+  if (m) m.textContent = num(el.value) ? `sofre só ${Math.floor(num(el.value) / 2)}` : "sofre metade";
+});
 app.addEventListener("change", (e) => {
   const el = e.target;
+  if (el.id === "bA" || el.id === "bB") { ui[el.id] = el.value; return; }
+  if (el.id === "bVerm" || el.id === "bCart") { ui[el.id] = el.checked; return; }
+  if (el.id === "bVermOn" && isGM() && state.batalha && !Array.isArray(state.batalha)) { beginAction("Tela avermelhada"); state.batalha.vermelho = el.checked; save(); endAction(); return; }
   if (el.id === "rMin") { ui.rMin = el.value; return; }
   if (el.id === "rRot") { ui.rRot = el.value; return; }
   if (el.dataset?.ritmoop && isGM()) { beginAction("Ritmo do ritual"); (state.ritmo ||= {})[el.dataset.ritmoop] = el.checked; save(); endAction(); return; }

@@ -592,3 +592,20 @@ button.estusar:hover { background: #b0121f; box-shadow: 0 0 16px rgba(255, 42, 5
 .card.ritmo summary { cursor: pointer; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .card.ritmo details .row { margin: 6px 0; }
 body.calmo .relo-app b { animation: none; }
+
+/* ---------- Batalha de intenções (v2.16) ---------- */
+.bat-sel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; margin: 6px 0; }
+.bat-x { font-size: 20px; color: var(--accent); text-align: center; text-shadow: 0 0 10px rgba(200,16,46,.6); }
+.card.batalha.on { border-color: var(--accent); box-shadow: 0 0 18px rgba(200,16,46,.25) inset; }
+.bat-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; margin: 6px 0 8px; }
+.bat-lado { display: flex; flex-direction: column; gap: 5px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-width: 0; }
+.bat-tipo { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.bat-nome { font-family: Cinzel, serif; font-size: 14px; overflow-wrap: anywhere; }
+.bat-pv { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+.bat-pv .mbar { display: block; height: 4px; background: #2a1d20; border-radius: 2px; overflow: hidden; }
+.bat-pv .mbar i { display: block; height: 100%; background: var(--accent); }
+.bat-lado button { font-size: 12px; padding: 5px 6px; }
+.bat-arena > .bat-x { align-self: center; }
+.batalha-banner { animation: batpulsa 2.4s ease-in-out infinite; }
+@keyframes batpulsa { 0%, 100% { box-shadow: 0 0 0 rgba(200,16,46,0) } 50% { box-shadow: 0 0 22px rgba(200,16,46,.45) } }
+body.calmo .batalha-banner { animation: none; }
