@@ -1,8 +1,8 @@
 /* Motor da cutscene: câmera em primeira pessoa (viewBox), pálpebras, foco, legendas e título.
    Abre em tela cheia no Owlbear (modal) ou direto no navegador para testar. */
 import OBR from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
-import * as SOM from "./som.js?v=1.1.0";
-import { CENAS } from "./cenas.js?v=1.1.0";
+import * as SOM from "./som.js?v=1.2.0";
+import { CENAS } from "./cenas.js?v=1.2.0";
 
 const NS = "io.github.pebarrosdenashor.hexatombe-cutscene";
 const MODAL = NS + "/cena";

@@ -135,7 +135,7 @@ function saida(pan = 0) {
 }
 
 /* cântico de romeiros: várias vozes num acorde lento, com vogal "a" */
-export const cantico = () => camada((g) => {
+export const cantico = (freqs = [110, 130.8, 164.8, 220, 261.6, 329.6]) => camada((g) => {
   const f1 = C.createBiquadFilter(); f1.type = "bandpass"; f1.frequency.value = 720; f1.Q.value = 4;
   const f2 = C.createBiquadFilter(); f2.type = "bandpass"; f2.frequency.value = 1150; f2.Q.value = 5;
   const lp = C.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2400;
@@ -145,7 +145,7 @@ export const cantico = () => camada((g) => {
   const vib = C.createOscillator(); vib.frequency.value = 4.6; const vg = C.createGain(); vg.gain.value = 2.2; vib.connect(vg); nos.push(vib);
   const resp = C.createOscillator(); resp.frequency.value = 0.09; const rg = C.createGain(); rg.gain.value = 0.35; nos.push(resp);
   const corpo = C.createGain(); corpo.gain.value = 0.6; resp.connect(rg).connect(corpo.gain); corpo.connect(lp);
-  for (const f of [110, 130.8, 164.8, 220, 261.6, 329.6]) for (const d of [-5, 4]) {
+  for (const f of freqs) for (const d of [-5, 4]) {
     const o = C.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = d + (Math.random() - 0.5) * 6;
     vg.connect(o.frequency); const og = C.createGain(); og.gain.value = f > 200 ? 0.07 : 0.1;
     o.connect(og).connect(corpo); nos.push(o);

@@ -1,7 +1,7 @@
 /* Primeiro encontro: A Romaria, no Morro do Calvário.
    Noite. Você está ao pé da escadaria das 14 estações; as velas acendem morro acima
    e a procissão sai do portão do pátio murado com o andor da santa. */
-import { pessoa, vela, veu, defsHalo, olhos, rnd } from "./kit.js?v=1.1.0";
+import { pessoa, vela, veu, defsHalo, olhos, rnd } from "./kit.js?v=1.2.0";
 
 const BASE_Y = 1960, TOPO_Y = 770, CX = 2000;
 const prog = (u) => 1 - Math.pow(1 - u, 1.75);
@@ -45,28 +45,12 @@ function nicho(i) {
 }
 
 /* um romeiro: manto, fita no pescoço, vela na mão */
-function romeiro(x, y, h, r, carrega = false) {
-  const cores = ["#d8d1c2", "#bfb6a4", "#cfc5b1", "#9e9585"], fitas = ["#b5372d", "#2e5ea8", "#d4a63c", "#3f8a55", "#c6c0b0"];
-  const cor = ["#2b2626", "#332c29", "#262224", "#3a302a"][Math.floor(r() * 4)];
-  const fita = `<path d="M-10,-160 Q0,-150 10,-160 L6,-120 M-10,-160 L-12,-118" stroke="${fitas[Math.floor(r() * 5)]}" stroke-width="3" fill="none"/>`;
-  const mao = carrega ? "" : vela(26, -94, 0.9);
-  return pessoa({ x, y, h, cor, pose: "manto", cabeca: veu(cores[Math.floor(r() * 4)]) + `<ellipse cx="0" cy="2" rx="9" ry="11" fill="#6e5a48"/>` + olhos(4, 0, "#f3d79b", 1.4), frente: fita + mao, classe: "romeiro" });
-}
+/* fita de romeiro no pescoço */
+const fita = (cor) => `<path d="M-10,-160 Q0,-150 10,-160 L6,-120 M-10,-160 L-12,-118" stroke="${cor}" stroke-width="3" fill="none"/>`;
+const rosto = (pele, extra = "") => `<ellipse cx="0" cy="1" rx="12" ry="14" fill="${pele}"/>${extra}` + olhos(4.5, 0, "#f3d79b", 1.5);
 
-function procissao() {
-  const r = rnd(33);
-  let s = "";
-  // atrás: povo saindo do portão
-  for (let i = 0; i < 7; i++) s += romeiro(CX - 60 + i * 20 + r() * 6, 708 + r() * 6, 46, r);
-  // andor: quatro carregadores e a santa
-  const yA = 752;
-  s += `<g id="andor">`;
-  s += romeiro(CX - 34, yA - 10, 54, r, true) + romeiro(CX + 34, yA - 10, 54, r, true);
-  s += `<rect x="${CX - 62}" y="${yA - 50}" width="124" height="5" fill="#5a3a20"/><rect x="${CX - 66}" y="${yA - 46}" width="132" height="4" fill="#3e2716"/>`;
-  s += `<rect x="${CX - 30}" y="${yA - 62}" width="60" height="13" fill="#b08a3a"/><path d="M${CX - 30},${yA - 62} L${CX + 30},${yA - 62}" stroke="#e4c36a" stroke-width="1.4"/>`;
-  s += `<g fill="#d6d0c4" opacity=".9">${[-24, -14, 14, 24].map((d) => `<circle cx="${CX + d}" cy="${yA - 64}" r="3.5"/><circle cx="${CX + d + 2}" cy="${yA - 67}" r="2.5" fill="#b5372d"/>`).join("")}</g>`;
-  // a santa
-  s += `<g id="santa" transform="translate(${CX},${yA - 62})">
+/* a santa, em cima do andor */
+const santa = (x, y) => `<g id="santa" transform="translate(${x},${y})">
     <circle cx="0" cy="-58" r="14" fill="none" stroke="#e8c76c" stroke-width="1.6" opacity=".9"/>
     ${[...Array(12)].map((_, i) => `<line x1="0" y1="-58" x2="${(Math.cos(i * Math.PI / 6) * 19).toFixed(1)}" y2="${(-58 + Math.sin(i * Math.PI / 6) * 19).toFixed(1)}" stroke="#e8c76c" stroke-width=".7" opacity=".55"/>`).join("")}
     <path d="M-15,0 Q-17,-30 -9,-46 Q0,-52 9,-46 Q17,-30 15,0 Z" fill="#2c4f93"/>
@@ -79,10 +63,37 @@ function procissao() {
       <path d="M-2.4,-56.3 Q-2.9,-53 -2.2,-50.5 Q-2.6,-49 -2,-47.6"/><path d="M2.4,-56.3 Q2.8,-53.2 2.3,-50.6 Q2.7,-49.2 2.1,-47.8"/></g>
     <path d="M-5,-36 Q0,-40 5,-36 L3,-28 L-3,-28 Z" fill="#e2c6a8"/>
   </g>`;
-  s += romeiro(CX - 40, yA + 14, 64, r, true) + romeiro(CX + 40, yA + 14, 64, r, true);
+
+/* A Romaria são cinco: Seu Damião, Dona Zefa, Irmão Lázaro, Graça e Tião. Ninguém mais. */
+function procissao() {
+  const yC = 790, yA = yC - 58; // carregadores e tábua do andor
+  let s = "";
+  // Graça e Tião carregam o andor (precisa de dois, lado a lado)
+  s += `<g id="andor">`;
+  s += pessoa({ id: "tiao", x: CX - 64, y: yC, h: 70, cor: "#3a2a22", cabeca: rosto("#7a5a40", `<path d="M-12,-6 Q-10,-16 0,-16 Q10,-16 12,-6 Q4,-10 -12,-6 Z" fill="#1a120c"/>`),
+    frente: `<path d="M-8,-156 L0,-128 L8,-156" fill="#8a6a4a"/>${fita("#d4a63c")}<g fill="#a8322a">${[-16, -8, 0, 8].map((d) => `<rect x="${d}" y="-104" width="6" height="22" rx="2"/>`).join("")}</g><path d="M-18,-104 L18,-104" stroke="#2a1a10" stroke-width="3"/>
+      <path d="M26,-150 L34,-176" stroke="#3a2a22" stroke-width="9" stroke-linecap="round"/>` });
+  s += pessoa({ id: "graca", x: CX + 64, y: yC, h: 66, pose: "manto", cor: "#6e6658", cabeca: veu("#e9e3d6") + rosto("#c9a888"),
+    frente: `${fita("#b5372d")}<path d="M-25,-150 L-33,-176" stroke="#6e6658" stroke-width="9" stroke-linecap="round"/>
+      <g fill="#e9e3d6"><rect x="-40" y="-186" width="13" height="11" rx="3"/><rect x="24" y="-104" width="13" height="11" rx="3"/></g>
+      <g fill="#7a120c"><circle cx="-33.5" cy="-180.5" r="2.8"/><circle cx="30.5" cy="-98.5" r="2.8"/></g>` });
+  s += `<rect x="${CX - 56}" y="${yA}" width="112" height="5" fill="#5a3a20"/><rect x="${CX - 58}" y="${yA + 4}" width="116" height="4" fill="#3e2716"/>`;
+  s += `<rect x="${CX - 30}" y="${yA - 12}" width="60" height="13" fill="#b08a3a"/><path d="M${CX - 30},${yA - 12} L${CX + 30},${yA - 12}" stroke="#e4c36a" stroke-width="1.4"/>`;
+  s += `<g fill="#d6d0c4" opacity=".9">${[-24, -14, 14, 24].map((d) => `<circle cx="${CX + d}" cy="${yA - 14}" r="3.5"/><circle cx="${CX + d + 2}" cy="${yA - 17}" r="2.5" fill="#b5372d"/>`).join("")}</g>`;
+  s += vela(CX - 27, yA - 12, 0.5) + vela(CX + 27, yA - 12, 0.5);
+  s += santa(CX, yA - 12);
   s += `</g>`;
-  // frente: os que descem primeiro
-  for (const [dx, dy, h] of [[-70, 30, 70], [-52, 46, 76], [56, 34, 72], [74, 50, 78], [-10, 62, 82], [16, 66, 84]]) s += romeiro(CX + dx, 760 + dy, h, r);
+  // Dona Zefa, de preto, chorando atrás
+  s += pessoa({ id: "zefa", x: CX - 98, y: yC + 18, h: 74, pose: "manto", cor: "#141214", cabeca: veu("#1c1a1c") + rosto("#8a6e5a") + `<path d="M-6,4 L6,4 L4,14 L-4,14 Z" fill="#e9e3d6"/>`,
+    frente: fita("#2e5ea8") + vela(24, -96, 0.9) });
+  // Irmão Lázaro, com a cruz nas costas
+  s += pessoa({ id: "lazaro", x: CX + 100, y: yC + 22, h: 80, cor: "#2a2420", giro: 8,
+    atras: `<g fill="#4a3624" transform="rotate(14 0 -120)"><rect x="-9" y="-290" width="18" height="300"/><rect x="-62" y="-230" width="124" height="16"/></g>`,
+    cabeca: rosto("#6e5a48", `<path d="M-12,-8 Q0,-18 12,-8" stroke="#3a2a1a" stroke-width="3" fill="none"/>`), frente: fita("#3f8a55") });
+  // Seu Damião, na frente, puxando a reza com o chapéu no peito
+  s += pessoa({ id: "damiao", x: CX - 4, y: yC + 44, h: 84, cor: "#2e2a26",
+    cabeca: rosto("#8a6e58", `<path d="M-12,-3 Q-14,3 -11,8 M12,-3 Q14,3 11,8" stroke="#d8d4cc" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M-8,8 Q0,18 8,8 Q0,22 -8,8 Z" fill="#d8d4cc"/>`),
+    frente: fita("#c6c0b0") + `<ellipse cx="-4" cy="-128" rx="22" ry="6" fill="#5a4630"/><path d="M-14,-130 Q-14,-146 -4,-146 Q6,-146 6,-130 Z" fill="#5a4630"/>` + vela(30, -96, 0.9) });
   return s;
 }
 
@@ -164,20 +175,28 @@ export async function roteiro(a) {
     await limpa(300);
 
     // o canto e a procissão
-    canto = som.cantico(); canto.alvo(0.35, 6);
+    canto = som.cantico([98, 146.8, 196, 233]); canto.alvo(0.35, 6);
     el("#brilho-portao").style.opacity = "1";
     await animar({ x: 2000, y: 760, w: 760 }, 4200);
-    await diz("Um canto começa atrás do muro. Muitas vozes, devagar, sem pressa nenhuma.", { segura: 1200 });
+    await diz("Um canto começa atrás do muro. Uma voz de velho puxa a reza, e outras poucas respondem.", { segura: 1200 });
     const p = el("#procissao"); p.style.opacity = "1"; p.style.transform = "translate(0px,10px)";
-    canto.alvo(0.6, 5);
-    await diz("Pelo portão sai uma procissão. Gente descalça, de fita no pescoço e vela na mão.", { segura: 1600 });
-    await diz("No meio deles, nos ombros de quatro homens, um andor.", { segura: 1400 });
+    canto.alvo(0.5, 5);
+    await diz("Pelo portão saem cinco pessoas. Só cinco.", { segura: 1300 });
+    await limpa(200);
+    await animar({ x: 1996, y: 790, w: 300 }, 2600);
+    await diz("Na frente, um velho de barba branca, com o chapéu no peito, puxando o canto.", { segura: 1300 });
+    await animar({ x: 2000, y: 735, w: 300 }, 2200);
+    await diz("Atrás dele, dois carregam um andor nos ombros: um rapaz com rojões na cintura e uma moça de mãos enfaixadas. O pano está vermelho.", { segura: 1400 });
+    await animar({ x: 2090, y: 740, w: 300 }, 2200);
+    await diz("Um homem magro arrasta uma cruz de madeira enorme nas costas.", { segura: 1200 });
+    await animar({ x: 1910, y: 760, w: 300 }, 2200);
+    await diz("E uma mulher toda de preto chora baixinho, sem parar.", { segura: 1300 });
     await limpa(300);
 
     // a santa
-    await animar({ x: 2000, y: 650, w: 130, balanco: 0.5 }, 4800);
+    await animar({ x: 2000, y: 680, w: 130, balanco: 0.5 }, 4800);
     await diz("Uma santa de manto azul, com uma coroa de raios.", { segura: 1300 });
-    await animar({ x: 2000, y: 642, w: 84 }, 3200);
+    await animar({ x: 2000, y: 672, w: 84 }, 3200);
     await diz("Dos olhos dela descem dois riscos escuros, até o queixo.", { segura: 1600 });
     await diz("Estão secos.", { segura: 1800 });
     await limpa(300);
@@ -189,7 +208,7 @@ export async function roteiro(a) {
     som.coracao(0.8);
     await diz("O canto para. Todos ao mesmo tempo.", { segura: 1200 });
     som.coracao(0.8);
-    await diz("Ninguém na escadaria se mexe. Só as chamas.", { segura: 1600 });
+    await diz("Os cinco ficam parados na escadaria. Só as chamas se mexem.", { segura: 1600 });
     await limpa(200);
     await diz("— Quem sobe o Calvário, sobe pagando promessa.", { segura: 1800, classe: "fala longe" });
     await diz("— Qual é a sua?", { segura: 2200, classe: "fala longe" });

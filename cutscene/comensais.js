@@ -1,7 +1,7 @@
 /* Primeiro encontro: Os Comensais, no Matadouro Municipal.
    Noite. O curral é uma armadilha de cordas e sinos de vaca. Lá dentro, ganchos, a câmara fria
    soltando vapor sem energia nenhuma e uma mesa comprida onde alguém para de mastigar. */
-import { pessoa, olhos, rnd } from "./kit.js?v=1.1.0";
+import { pessoa, olhos, rnd } from "./kit.js?v=1.2.0";
 
 const CHAO = 1520, IX = 6000; // IX: onde fica o interior do galpão no mundo
 
